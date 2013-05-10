@@ -1,5 +1,6 @@
 /*
  Copyright (c) 2010 Greg James, Brian Silverman, Barry Silverman
+ Copyright (c) 2013 Pietro Gagliardi
 
  The following is provided under terms of the Creative Commons
  Attribution-NonCommercial-ShareAlike 3.0 Unported license:
@@ -9,7 +10,9 @@
  for original source material:  www.visual6502.org
 */ 
 
-BOOL segdefs[] = {
+package main
+
+var segdefs = []BOOL{
 /* 0 */ 1,
 /* 1 */ 0,
 /* 2 */ 0,
@@ -1734,6 +1737,5 @@ BOOL segdefs[] = {
 /* 1721 */ 1,
 /* 1722 */ 1,
 /* 1723 */ 0,
-/* 1724 */ 1
-};
-
+/* 1724 */ 1,
+}
