@@ -17,7 +17,7 @@ import (
 var (
 	A, X, Y, S, P	byte
 	PC			uint16
-	N, Z, C		int
+	N, Z, C		bool
 )
 
 func init_monitor() {
@@ -66,9 +66,9 @@ func handle_monitor() {
 		Y = readY()
 		S = readSP()
 		P = readP()
-		N = P >> 7
-		Z = (P >> 1) & 1
-		C = P & 1
+		N = (P >> 7) == 1
+		Z = ((P >> 1) & 1) == 1
+		C = (P & 1) == 1
 
 		kernal_dispatch()
 
