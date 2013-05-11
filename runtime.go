@@ -39,9 +39,6 @@ import (
 
 //#define NO_CLRHOME
 
-#include "glue.h"
-#include "console.h"
-
 // the main program must set this to true if it had #define DEBUG before
 var DEBUG bool = false
 
@@ -125,7 +122,7 @@ CHRGOT_start:
 	C = true
 	temp16 = uint16(A) - 0xD0 - (1 - uint16(C))
 	SETV(((A ^ temp16) & 0x80) && ((A ^ 0xD0) & 0x80))
-	A = uint16(temp16 0xFF)
+	A = byte(temp16 & 0xFF)
 	SETSZ(A)
 	SETNC(temp16)
 }
@@ -375,7 +372,7 @@ func OPEN() {
 
 /* CLOSE */
 // TODO(andlabs) - was static; this makes it exported (worry?)
-CLOSE() {
+func CLOSE() {
 	if kernal_files[kernal_lfn] == nil {
 		C = true
 		A = KERN_ERR_FILE_NOT_OPEN
@@ -535,8 +532,9 @@ printf("CHROUT: %d @ %x,%x,%x,%x\n", A, a, b, c, d);
 	}
 	if stack4(0xe10f, 0xab4a, 0xab30, 0xa47b) {
 		/* READY */
-		if A == 'R'
+		if A == 'R' {
 			readycount++
+		}
 		if !interactive {
 			C = false
 			return
@@ -730,7 +728,8 @@ func LOAD() {
 			}
 			RAM[memp] = '"'; memp++
 			for i = namlen; i < 16; i++ {
-				RAM[memp++] = ' '
+				RAM[memp] = ' '
+				memp++
 			}
 			RAM[memp] = ' '; memp++
 			RAM[memp] = 'P'; memp++
@@ -847,7 +846,7 @@ func SAVE() {
 	}
 	filename := string(RAM[kernal_filename:kernal_filename + kernal_filename_len])
 	f, err := os.Create(filename)	// overwrite - these are not the COMMODORE DOS semantics!
-	if err != nil
+	if err != nil {
 		C = true
 		A = KERN_ERR_FILE_NOT_FOUND
 		return
@@ -892,7 +891,7 @@ func RDTIM() {
 
 /* STOP */
 // TODO(andlabs) - was static; this makes it exported (worry?)
-STOP() {
+func STOP() {
 	SETZ(0)		// TODO we don't support the STOP key
 }
 
@@ -1011,13 +1010,13 @@ func kernal_dispatch() int {
 		SETNAM()
 	case 0xFFC0:
 		OPEN()
-	case 0xFFC3
+	case 0xFFC3:
 		CLOSE()
 	case 0xFFC6:
 		CHKIN()
-	case 0xFFC9
+	case 0xFFC9:
 		CHKOUT()
-	case 0xFFCC
+	case 0xFFCC:
 		CLRCHN()
 	case 0xFFCF:
 		CHRIN()
@@ -1029,7 +1028,7 @@ func kernal_dispatch() int {
 		SAVE()
 	case 0xFFDB:
 		SETTIM()
-	case 0xFFDE
+	case 0xFFDE:
 		RDTIM()
 	case 0xFFE1:
 		STOP()

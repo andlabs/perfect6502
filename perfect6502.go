@@ -38,8 +38,6 @@ func init() {
  *
  ************************************************************/
 
-#include "perfect6502.h"
-
 type BOOL uint
 
 const (
@@ -543,11 +541,9 @@ func readPC() uint16 {
  *
  ************************************************************/
 
-unsigned int cycle;
+var cycle uint
 
-void
-chipStatus()
-{
+func chipStatus() {
 	clk := isNodeHigh(clk0)
 	a := readAddressBus()
 	d := readDataBus()

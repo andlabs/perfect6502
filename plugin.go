@@ -53,9 +53,6 @@ import (
 //	"os/exec"
 )
 
-#include "glue.h"
-#include "console.h"
-
 func get_chrptr() uint16 {
 	return uint16(RAM[0x7A]) | (uint16(RAM[0x7B]) << 8)
 }
