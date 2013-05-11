@@ -228,11 +228,10 @@ func plugin_gone() uint16 {
 		 */
 		if compare("\222") {		// 0x92 - WAIT
 			var a uint16
-			var b byte
 
 			a = get_word()
 			check_comma()
-			b = get_byte()
+			get_byte()
 			if a == 6502 {
 				fmt.Printf("MICROSOFT!")
 				continue

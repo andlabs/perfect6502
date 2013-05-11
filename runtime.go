@@ -432,6 +432,9 @@ var (
 /* CHRIN */
 // TODO(andlabs) - was static; this makes it exported (worry?)
 func CHRIN() {
+	var c []byte
+	var err error
+
 	if (!interactive) && (readycount == 2) {
 		os.Exit(0)
 	}
@@ -451,8 +454,8 @@ func CHRIN() {
 			}
 		}
 		A = byte(kernal_files_next[kernal_input] & 0xFF)
-		c := make([]byte, 1)
-		_, err := kernal_files[kernal_input].Read(c)
+		c = make([]byte, 1)
+		_, err = kernal_files[kernal_input].Read(c)
 		if err == io.EOF {
 			kernal_status |= KERN_ST_EOF
 			kernal_files_next[kernal_input] = EOF
@@ -648,6 +651,13 @@ func LOAD() {
 	var end uint16
 	var i int
 
+	var err error
+	var filename string
+	var f *os.File
+	var st os.FileInfo
+	var c []byte
+	var b []byte
+
 	if A != 0 {
 		fatalf("UNIMPL: VERIFY");
 	}
@@ -760,10 +770,10 @@ for (i=0; i<255; i++) {
 		goto load_noerr
 	} // end if RAM[kernal_filename] == '$'
 
-	filename := string(RAM[kernal_filename:kernal_filename + kernal_filename_len])
+	filename = string(RAM[kernal_filename:kernal_filename + kernal_filename_len])
 
 	// on directory filename chdir on it
-	st, err := os.Stat(filename)
+	st, err = os.Stat(filename)
 	if err != nil {
 		goto file_not_found
 	}
@@ -779,11 +789,11 @@ for (i=0; i<255; i++) {
 	}
 
 	// on file load it read it and load in the basic area memory
-	f, err := os.Open(filename)
+	f, err = os.Open(filename)
 	if err != nil {
 		goto file_not_found
 	}
-	c := make([]byte, 2)
+	c = make([]byte, 2)
 	_, err = f.Read(c)
 	if err != nil {
 		// TODO(andlabs)
@@ -792,7 +802,7 @@ for (i=0; i<255; i++) {
 	if kernal_sec != 0 {
 		start = uint16(X) | (uint16(Y) << 8)
 	}
-	b, err := ioutil.ReadAll(f)	// we cannot read directly into RAM as we cannot guarantee RAM[size of f:] is left alone
+	b, err = ioutil.ReadAll(f)	// we cannot read directly into RAM as we cannot guarantee RAM[size of f:] is left alone
 	if err != nil {
 		// TODO(andlabs)
 	}
@@ -902,10 +912,13 @@ func STOP() {
 /* GETIN */
 // TODO(andlabs) - was static; this makes it exported (worry?)
 func GETIN() {
+	var c []byte
+	var err error
+
 	if kernal_input != 0 {
 		if kernal_files_next[kernal_input] == EOF {
-			c := make([]byte, 1)
-			_, err := kernal_files[kernal_input].Read(c)
+			c = make([]byte, 1)
+			_, err = kernal_files[kernal_input].Read(c)
 			if err == io.EOF {
 				kernal_status |= KERN_ST_EOF
 				kernal_status |= KERN_ST_TIME_OUT_READ
@@ -918,8 +931,8 @@ func GETIN() {
 			}
 		}
 		A = byte(kernal_files_next[kernal_input] & 0xFF)
-		c := make([]byte, 1)
-		_, err := kernal_files[kernal_input].Read(c)
+		c = make([]byte, 1)
+		_, err = kernal_files[kernal_input].Read(c)
 		if err == io.EOF {
 			kernal_status |= KERN_ST_EOF
 			kernal_files_next[kernal_input] = EOF

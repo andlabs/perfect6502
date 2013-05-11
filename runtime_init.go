@@ -73,7 +73,15 @@ func handle_monitor() {
 
 		/* encode processor status */
 		P &= 0x7C				// clear N, Z, C
-		P |= (N << 7) | (Z << 1) | C
+		if N {
+			P |= 1 << 7
+		}
+		if Z {
+			P |= 1 << 1
+		}
+		if C {
+			P |= 1
+		}
 
 		/*
 		 * all KERNAL calls make the 6502 jump to $F800, so we
