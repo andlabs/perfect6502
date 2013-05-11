@@ -39,18 +39,6 @@ import (
 
 //#define NO_CLRHOME
 
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#ifdef _WIN32
-#include <direct.h>  // getcwd, chdir
-#include <windows.h> // GetLocalTime, SetLocalTime
-#include <conio.h>   // _kbhit, _getch
-#else
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-#include "stat.h"
 #include "readdir.h"
 #include "plugin.h"
 #include "glue.h"
