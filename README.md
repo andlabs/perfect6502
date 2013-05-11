@@ -29,7 +29,7 @@ I intend to use this to create a general-purpose perfect emulator core. Things p
 		1663 = 2
 		1701 = 2
 		```
-
+		it appears to have to do with nodes not connected to transistors...
 - changing all external pins to use channels so I can hook things together
 	- this means the simulator will run in a goroutine and the clock will be automated
 
