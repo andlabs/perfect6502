@@ -78,7 +78,7 @@ func DECLARE_BITMAP(count uint64) []bitmap_t {
 }
 
 func bitmap_clear(bitmap []bitmap_t, count uint64) {
-	for i := uint64(0); i < WORDS_FOR_BITS(uint64(count)); i++ {
+	for i := uint64(0); i < WORDS_FOR_BITS(count); i++ {
 		bitmap[i] = 0
 	}
 }
@@ -120,27 +120,27 @@ var (
  */
 
 func set_nodes_pullup(t uint64, state BOOL) {
-	set_bitmap(nodes_pullup, uint64(t), state)
+	set_bitmap(nodes_pullup, t, state)
 }
 
 func get_nodes_pullup(t uint64) BOOL {
-	return get_bitmap(nodes_pullup, uint64(t))
+	return get_bitmap(nodes_pullup, t)
 }
 
 func set_nodes_pulldown(t uint64, state BOOL) {
-	set_bitmap(nodes_pulldown, uint64(t), state)
+	set_bitmap(nodes_pulldown, t, state)
 }
 
 func get_nodes_pulldown(t uint64) BOOL {
-	return get_bitmap(nodes_pulldown, uint64(t))
+	return get_bitmap(nodes_pulldown, t)
 }
 
 func set_nodes_value(t uint64, state BOOL) {
-	set_bitmap(nodes_value, uint64(t), state)
+	set_bitmap(nodes_value, t, state)
 }
 
 func get_nodes_value(t uint64) BOOL {
-	return get_bitmap(nodes_value, uint64(t))
+	return get_bitmap(nodes_value, t)
 }
 
 /************************************************************
@@ -167,11 +167,11 @@ func set_transistors_on(t uint64, state BOOL) {
 		return
 	}
 //#endif
-	set_bitmap(transistors_on, uint64(t), state)
+	set_bitmap(transistors_on, t, state)
 }
 
 func get_transistors_on(t uint64) BOOL {
-	return get_bitmap(transistors_on, uint64(t))
+	return get_bitmap(transistors_on, t)
 }
 
 /************************************************************
@@ -248,13 +248,13 @@ var (
 
 func group_clear() {
 	groupcount = 0
-	bitmap_clear(groupbitmap, uint64(NODES))
+	bitmap_clear(groupbitmap, NODES)
 }
 
 func group_add(i uint64) {
 	group[groupcount] = i
 	groupcount++
-	set_bitmap(groupbitmap, uint64(i), 1)
+	set_bitmap(groupbitmap, i, 1)
 }
 
 func group_get(n uint64) uint64 {
@@ -262,7 +262,7 @@ func group_get(n uint64) uint64 {
 }
 
 func group_contains(el uint64) BOOL {
-	return get_bitmap(groupbitmap, uint64(el))
+	return get_bitmap(groupbitmap, el)
 }
 
 func group_count() uint64 {
@@ -289,13 +289,13 @@ func addNodeToGroup(n uint64) {
 
 	group_add(n)
 
-	if get_nodes_pullup(uint64(n)) != 0 {
+	if get_nodes_pullup(n) != 0 {
 		group_contains_pullup = YES
 	}
-	if get_nodes_pulldown(uint64(n)) != 0 {
+	if get_nodes_pulldown(n) != 0 {
 		group_contains_pulldown = YES
 	}
-	if get_nodes_value(uint64(n)) != 0 {
+	if get_nodes_value(n) != 0 {
 		group_contains_hi = YES
 	}
 
@@ -305,7 +305,7 @@ func addNodeToGroup(n uint64) {
 
 	// revisit all transistors that are controlled by this node
 	for t := uint64(0); t < nodes_c1c2count[n]; t++ {
-		tn := uint64(nodes_c1c2s[n][t])
+		tn := nodes_c1c2s[n][t]
 		// if the transistor connects c1 and c2...
 		if get_transistors_on(tn) != 0 {
 			// if original node was connected to c1, continue with c2
@@ -372,14 +372,14 @@ func recalcNode(node uint64) {
 	 *   for the next run
 	 */
 	for i := uint64(0); i < group_count(); i++ {
-		nn := uint64(group_get(i))
+		nn := group_get(i)
 		if get_nodes_value(nn) != newv {
 			set_nodes_value(nn, newv)
 			for t := uint64(0); t < nodes_gatecount[nn]; t++ {
-				tn := uint64(nodes_gates[nn][t])
+				tn := nodes_gates[nn][t]
 				set_transistors_on(tn, BOOL_not(get_transistors_on(tn)))
 			}
-			listout_add(uint64(nn))
+			listout_add(nn)
 		}
 	}
 }
@@ -409,7 +409,7 @@ func recalcNodeList(source []uint64, count uint64) {
 		 */
 		for i := uint64(0); i < listin_count(); i++ {
 			n := listin_get(i)
-			for g := uint64(0); g < uint64(nodes_dependants[n]); g++ {
+			for g := uint64(0); g < nodes_dependants[n]; g++ {
 				recalcNode(nodes_dependant[n][g])
 			}
 		}
@@ -425,9 +425,9 @@ func recalcNodeList(source []uint64, count uint64) {
 func recalcAllNodes() {
 	var temp [NODES]uint64
 	for i := uint64(0); i < NODES; i++ {
-		temp[i] = uint64(i)
+		temp[i] = i
 	}
-	recalcNodeList(temp[:], uint64(NODES))
+	recalcNodeList(temp[:], NODES)
 }
 
 /************************************************************
@@ -437,13 +437,13 @@ func recalcAllNodes() {
  ************************************************************/
 
 func setNode(nn uint64, state BOOL) {
-	set_nodes_pullup(uint64(nn), state)
-	set_nodes_pulldown(uint64(nn), BOOL_not(state))
+	set_nodes_pullup(nn, state)
+	set_nodes_pulldown(nn, BOOL_not(state))
 	recalcNodeList([]uint64{ nn }, 1)
 }
 
 func isNodeHigh(nn uint64) BOOL {
-	return get_nodes_value(uint64(nn))
+	return get_nodes_value(nn)
 }
 
 /************************************************************
@@ -612,10 +612,10 @@ func step() {
  *
  ************************************************************/
 
-var transistors uint
+var transistors uint		// TODO(andlabs) - make uint64?
 
 func add_nodes_dependant(a uint64, b uint64) {
-	for g := uint64(0); g < uint64(nodes_dependants[a]); g++ {
+	for g := uint64(0); g < nodes_dependants[a]; g++ {
 		if nodes_dependant[a][g] == b {
 			return
 		}
@@ -634,7 +634,7 @@ func setupNodesAndTransistors() {
 		if segdefs[i] == 1 {
 			b = YES
 		}
-		set_nodes_pullup(uint64(i), b)
+		set_nodes_pullup(i, b)
 		nodes_gatecount[i] = 0
 		nodes_c1c2count[i] = 0
 	}
@@ -642,9 +642,9 @@ func setupNodesAndTransistors() {
 	// copy transistors into r/w data structure
 	j := uint64(0)
 	for i = 0; i < TRANSISTORS; i++ {
-		gate := uint64(transdefs[i].gate)
-		c1 := uint64(transdefs[i].c1)
-		c2 := uint64(transdefs[i].c2)
+		gate := transdefs[i].gate
+		c1 := transdefs[i].c1
+		c2 := transdefs[i].c2
 		/* skip duplicate transistors */
 		found := BOOL(NO)
 
@@ -665,11 +665,11 @@ func setupNodesAndTransistors() {
 		gate := transistors_gate[i]
 		c1 := transistors_c1[i]
 		c2 := transistors_c2[i]
-		nodes_gates[gate][nodes_gatecount[gate]] = uint64(i)
+		nodes_gates[gate][nodes_gatecount[gate]] = i
 		nodes_gatecount[gate]++
-		nodes_c1c2s[c1][nodes_c1c2count[c1]] = uint64(i)
+		nodes_c1c2s[c1][nodes_c1c2count[c1]] = i
 		nodes_c1c2count[c1]++
-		nodes_c1c2s[c2][nodes_c1c2count[c2]] = uint64(i)
+		nodes_c1c2s[c2][nodes_c1c2count[c2]] = i
 		nodes_c1c2count[c2]++
 	}
 
@@ -677,8 +677,8 @@ func setupNodesAndTransistors() {
 		nodes_dependants[i] = 0
 		for g := uint64(0); g < nodes_gatecount[i]; g++ {
 			t := nodes_gates[i][g]
-			add_nodes_dependant(uint64(i), transistors_c1[t])
-			add_nodes_dependant(uint64(i), transistors_c2[t])
+			add_nodes_dependant(i, transistors_c1[t])
+			add_nodes_dependant(i, transistors_c2[t])
 		}
 	}
 }
@@ -686,7 +686,7 @@ func setupNodesAndTransistors() {
 func resetChip() {
 	// all nodes are down
 	for nn := uint64(0); nn < NODES; nn++ {
-		set_nodes_value(uint64(nn), 0)
+		set_nodes_value(nn, 0)
 	}
 
 	// all transistors are off
