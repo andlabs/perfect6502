@@ -39,7 +39,6 @@ import (
 
 //#define NO_CLRHOME
 
-#include "readdir.h"
 #include "plugin.h"
 #include "glue.h"
 #include "console.h"
