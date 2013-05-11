@@ -103,25 +103,27 @@ CHRGOT_start:
 	SETSZ(A)
 	temp16 = uint16(A) - 0x3A
 	SETNC(temp16)
-	SETSZ(temp16 & 0xFF)
+	SETSZ(byte(temp16 & 0xFF))
 	if C {
 		return
 	}
 	temp16 = uint16(A) - 0x20
 	SETNC(temp16)
-	SETSZ(temp16 & 0xFF)
+	SETSZ(byte(temp16 & 0xFF))
 	if Z {
 		goto CHRGET_start
 	}
 	C = true
-	temp16 = uint16(A) - 0x30 - (1 - uint16(C))
-	SETV(((uint16(A) ^ temp16) & 0x80) && ((uint16(A) ^ 0x30) & 0x80))
+	temp16 = uint16(A) - 0x30 - 0//(1 - uint16(C))
+//TODO(andlabs)
+//	SETV(byte((uint16(A) ^ temp16) & 0x80) && ((A ^ 0x30) & 0x80))
 	A = byte(temp16 & 0xFF)
 	SETSZ(A)
 	SETNC(temp16)
 	C = true
-	temp16 = uint16(A) - 0xD0 - (1 - uint16(C))
-	SETV(((A ^ temp16) & 0x80) && ((A ^ 0xD0) & 0x80))
+	temp16 = uint16(A) - 0xD0 - 0//(1 - uint16(C))
+//TODO(andlabs)
+//	SETV(byte((uint16(A) ^ temp16) & 0x80) && ((A ^ 0xD0) & 0x80))
 	A = byte(temp16 & 0xFF)
 	SETSZ(A)
 	SETNC(temp16)
@@ -168,7 +170,7 @@ var (
 	kernal_msgflag		byte
 	kernal_status			byte = 0
 	kernal_filename		uint16
-	kernal_filename_len		byte
+	kernal_filename_len		uint16		// originally byte but changed to uint16 to avoid casting everywhere
 	kernal_lfn				byte
 	kernal_dev			byte
 	kernal_sec			byte
@@ -178,6 +180,8 @@ var (
 	kernal_files = []*os.File{ nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil }
 	kernal_files_next = []int{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 )
+
+const EOF = 0xFFFF
 
 /* shell script hack */
 var (
@@ -216,7 +220,7 @@ func init_os(args []string) uint16 {
 				c = getc()
 			}
 		} else {
-			_, err = f.Seek(0, 0)
+			_, err = input_file.Seek(0, 0)
 			if err != nil {
 				fatalf("error seeking %s back to start: %v", args[1], err)
 			}
@@ -332,14 +336,14 @@ func SETLFS() {
 // TODO(andlabs) - was static; this makes it exported (worry?)
 func SETNAM() {
 	kernal_filename = uint16(X) | (uint16(Y) << 8)
-	kernal_filename_len = A
+	kernal_filename_len = uint16(A)
 }
 
 /* OPEN */
 // TODO(andlabs) - was static; this makes it exported (worry?)
 func OPEN() {
 	kernal_status = 0
-	if kernal_files[kernal_lfn] {
+	if kernal_files[kernal_lfn] != nil {
 		C = true
 		A = KERN_ERR_FILE_OPEN
 	} else if kernal_filename_len == 0 {
@@ -434,7 +438,7 @@ func CHRIN() {
 	if kernal_input != 0 {
 		if kernal_files_next[kernal_input] == EOF {
 			c := make([]byte, 1)
-			_, err = kernal_files[kernal_input].Read(c)
+			_, err := kernal_files[kernal_input].Read(c)
 			if err == io.EOF {
 				kernal_status |= KERN_ST_EOF
 				kernal_status |= KERN_ST_TIME_OUT_READ
@@ -443,24 +447,24 @@ func CHRIN() {
 			} else if err != nil {
 				// TODO(andlabs)
 			} else {
-				kernal_files_next[kernal_input] = uint(c[0])
+				kernal_files_next[kernal_input] = int(c[0])
 			}
 		}
 		A = byte(kernal_files_next[kernal_input] & 0xFF)
 		c := make([]byte, 1)
-		_, err = kernal_files[kernal_input].Read(c)
+		_, err := kernal_files[kernal_input].Read(c)
 		if err == io.EOF {
 			kernal_status |= KERN_ST_EOF
 			kernal_files_next[kernal_input] = EOF
 		} else if err != nil {
 			// TODO(andlabs)
 		} else {
-			kernal_files_next[kernal_input] = uint(c[0])
+			kernal_files_next[kernal_input] = int(c[0])
 		}
 	out:
 	} else if input_file == nil {
 		c := make([]byte, 1)
-		_, err = os.Stdin.Read(c)
+		_, err := os.Stdin.Read(c)
 		if err != nil {
 			// TODO(andlabs)
 		}
@@ -477,7 +481,7 @@ func CHRIN() {
 			}
 		} else {
 			c := make([]byte, 1)
-			_, err = input_file.Read(c)
+			_, err := input_file.Read(c)
 			if err == io.EOF {
 				A = 255		// TODO(andlabs) - is this correct?
 			} else if err != nil {
@@ -558,7 +562,7 @@ printf("CHROUT: %d @ %x,%x,%x,%x\n", A, a, b, c, d);
 //#else
 	if kernal_output != 0 {
 		c := []byte{ A }
-		_, err = kernal_files[kernal_output].Write(c)
+		_, err := kernal_files[kernal_output].Write(c)
 		if err == io.EOF {
 			C = true
 			A = KERN_ERR_NOT_OUTPUT_FILE
@@ -664,7 +668,7 @@ func LOAD() {
 		RAM[memp] = 0x12; memp++		// REVERS ON
 		RAM[memp] = '"'; memp++
 		for i = 0; i < 16; i++ {
-			RAM[memp + i] = ' '
+			RAM[memp + uint16(i)] = ' '
 		}
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -881,7 +885,7 @@ func RDTIM() {
 	var jiffies uint32
 
 	now := time.Now()
-	usec := now.Nanoseconds() / int(time.Microsecond)
+	usec := now.Nanosecond() / int(time.Microsecond)
 	jiffies = uint32(((now.Hour()*60 + now.Minute())*60 + now.Second())*60 + usec / (1000000/60))
 
 	Y = byte(jiffies / 65536)
@@ -901,7 +905,7 @@ func GETIN() {
 	if kernal_input != 0 {
 		if kernal_files_next[kernal_input] == EOF {
 			c := make([]byte, 1)
-			_, err = kernal_files[kernal_input].Read(c)
+			_, err := kernal_files[kernal_input].Read(c)
 			if err == io.EOF {
 				kernal_status |= KERN_ST_EOF
 				kernal_status |= KERN_ST_TIME_OUT_READ
@@ -910,25 +914,25 @@ func GETIN() {
 			} else if err != nil {
 				// TODO(andlabs)
 			} else {
-				kernal_files_next[kernal_input] = uint(c[0])
+				kernal_files_next[kernal_input] = int(c[0])
 			}
 		}
 		A = byte(kernal_files_next[kernal_input] & 0xFF)
 		c := make([]byte, 1)
-		_, err = kernal_files[kernal_input].Read(c)
+		_, err := kernal_files[kernal_input].Read(c)
 		if err == io.EOF {
 			kernal_status |= KERN_ST_EOF
 			kernal_files_next[kernal_input] = EOF
 		} else if err != nil {
 			// TODO(andlabs)
 		} else {
-			kernal_files_next[kernal_input] = uint(c[0])
+			kernal_files_next[kernal_input] = int(c[0])
 		}
 	out:
 		C = false
 	} else {
 		c := make([]byte, 1)
-		_, err = os.Stdin.Read(c)
+		_, err := os.Stdin.Read(c)
 		if err != nil {
 			// TODO(andlabs)
 		}

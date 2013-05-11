@@ -24,6 +24,6 @@ func up_cursor() {}
 func down_cursor() {}
 func left_cursor() {}
 func right_cursor() {}
-func move_cursor(int, int) {}
+func move_cursor(byte, byte) {}
 func get_cursor(*int, *int) {}
 func set_color(int) {}

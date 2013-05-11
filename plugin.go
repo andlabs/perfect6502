@@ -65,7 +65,7 @@ func set_chrptr(a uint16) {
 func compare(s string) bool {
 	var chrptr uint16 = get_chrptr()
 
-	for i = 0; i < len(s); i++ {
+	for i := 0; i < len(s); i++ {
 		CHRGET()
 		if A != s[i] {
 			set_chrptr(chrptr);
@@ -87,7 +87,7 @@ func compare(s string) bool {
 func call(pc uint16) {
 	PC = pc
 	PUSH_WORD(MAGIC_CONTINUATION - 1)
-	main(nil)		// TODO(andlabs)
+	main()		// TODO(andlabs) - handled?
 }
 
 func check_comma() {

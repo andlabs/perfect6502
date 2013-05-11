@@ -12,7 +12,7 @@
 
 package main
 
-var segdefs = []BOOL{
+var segdefs = [...]BOOL{
 /* 0 */ 1,
 /* 1 */ 0,
 /* 2 */ 0,

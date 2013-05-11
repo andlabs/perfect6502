@@ -200,7 +200,7 @@ const (
 	y7 = 843
 )
 
-var transdefs = []struct {
+var transdefs = [...]struct {
 	gate		uint64
 	c1		uint64
 	c2		uint64

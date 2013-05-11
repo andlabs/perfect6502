@@ -14,15 +14,16 @@ func SETNC(a uint16) {
 }
 
 func SETV(a byte) {
-	/* not needed */
+	// not needed
 }
 
 func STACK16(i byte) uint16 {
-	return uint16(RAM[0x0100 + i]) | (uint16(RAM[0x0100 + i + 1]) << 8)
+	// TODO(andlabs) - will this cross back into zero page or page 2?
+	return uint16(RAM[0x0100 + uint16(i)]) | (uint16(RAM[0x0100 + uint16(i) + 1]) << 8)
 }
 
 func PUSH(b byte) {
-	RAM[0x0100 + S] = b
+	RAM[0x0100 + uint16(S)] = b
 	S--
 }
 
