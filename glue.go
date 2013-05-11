@@ -1,5 +1,15 @@
 package main
 
+import (
+	"fmt"
+	"os"
+)
+
+func fatalf(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, "%s\n", fmt.Sprintf(format, args...))
+	os.Exit(1)
+}
+
 func SETZ(a byte) {
 	Z = a == 0
 }
