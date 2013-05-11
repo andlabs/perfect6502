@@ -59,16 +59,6 @@ const (
 
 /************************************************************
  *
- * Global Data Types
- *
- ************************************************************/
-
-/* the smallest types to fit the numbers */
-type count_t uint16
-// TODO(andlabs) - these will all need to be made a single name and type to simplify everything later (preferaly to just uint64 for future compatibility)
-
-/************************************************************
- *
  * Bitmap Data Structures and Algorithms
  *
  ************************************************************/
@@ -87,7 +77,7 @@ func DECLARE_BITMAP(count uint64) []bitmap_t {
 	return make([]bitmap_t, WORDS_FOR_BITS(count))
 }
 
-func bitmap_clear(bitmap []bitmap_t, count count_t) {
+func bitmap_clear(bitmap []bitmap_t, count uint64) {
 	for i := uint64(0); i < WORDS_FOR_BITS(uint64(count)); i++ {
 		bitmap[i] = 0
 	}
@@ -118,8 +108,8 @@ var (
 	nodes_value = DECLARE_BITMAP(NODES)
 	nodes_gates		[NODES][NODES]uint64
 	nodes_c1c2s		[NODES][2*NODES]uint64
-	nodes_gatecount	[NODES]count_t
-	nodes_c1c2count	[NODES]count_t
+	nodes_gatecount	[NODES]uint64
+	nodes_c1c2count	[NODES]uint64
 	nodes_dependants	[NODES]uint64
 	nodes_dependant	[NODES][NODES]uint64
 )
@@ -195,7 +185,7 @@ func get_transistors_on(t uint64) BOOL {
 /* list of nodes that need to be recalculated */
 type list_t struct {
 	list		[]uint64
-	count	count_t
+	count	uint64
 }
 
 /* the nodes we are working with */
@@ -214,11 +204,11 @@ var (
 	}
 )
 
-func listin_get(i count_t) uint64 {
+func listin_get(i uint64) uint64 {
 	return listin.list[i]
 }
 
-func listin_count() count_t {
+func listin_count() uint64 {
 	return listin.count
 }
 
@@ -250,7 +240,7 @@ func listout_add(i uint64) {
  */
 var (
 	group		[NODES]uint64
-	groupcount	count_t
+	groupcount	uint64
 	groupbitmap = DECLARE_BITMAP(NODES)
 )
 
@@ -258,7 +248,7 @@ var (
 
 func group_clear() {
 	groupcount = 0
-	bitmap_clear(groupbitmap, count_t(NODES))
+	bitmap_clear(groupbitmap, uint64(NODES))
 }
 
 func group_add(i uint64) {
@@ -267,7 +257,7 @@ func group_add(i uint64) {
 	set_bitmap(groupbitmap, uint64(i), 1)
 }
 
-func group_get(n count_t) uint64 {
+func group_get(n uint64) uint64 {
 	return group[n]
 }
 
@@ -275,7 +265,7 @@ func group_contains(el uint64) BOOL {
 	return get_bitmap(groupbitmap, uint64(el))
 }
 
-func group_count() count_t {
+func group_count() uint64 {
 	return groupcount
 }
 
@@ -314,7 +304,7 @@ func addNodeToGroup(n uint64) {
 	}
 
 	// revisit all transistors that are controlled by this node
-	for t := count_t(0); t < nodes_c1c2count[n]; t++ {
+	for t := uint64(0); t < nodes_c1c2count[n]; t++ {
 		tn := uint64(nodes_c1c2s[n][t])
 		// if the transistor connects c1 and c2...
 		if get_transistors_on(tn) != 0 {
@@ -381,11 +371,11 @@ func recalcNode(node uint64) {
 	 * - collect all nodes behind toggled transistors
 	 *   for the next run
 	 */
-	for i := count_t(0); i < group_count(); i++ {
+	for i := uint64(0); i < group_count(); i++ {
 		nn := uint64(group_get(i))
 		if get_nodes_value(nn) != newv {
 			set_nodes_value(nn, newv)
-			for t := count_t(0); t < nodes_gatecount[nn]; t++ {
+			for t := uint64(0); t < nodes_gatecount[nn]; t++ {
 				tn := uint64(nodes_gates[nn][t])
 				set_transistors_on(tn, BOOL_not(get_transistors_on(tn)))
 			}
@@ -394,10 +384,10 @@ func recalcNode(node uint64) {
 	}
 }
 
-func recalcNodeList(source []uint64, count count_t) {
+func recalcNodeList(source []uint64, count uint64) {
 	listout_clear()
 
-	for i := count_t(0); i < count; i++ {
+	for i := uint64(0); i < count; i++ {
 		recalcNode(source[i])
 	}
 
@@ -417,9 +407,9 @@ func recalcNodeList(source []uint64, count count_t) {
 		 * all transistors controlled by this path, collecting
 		 * all nodes that changed because of it for the next run
 		 */
-		for i := count_t(0); i < listin_count(); i++ {
+		for i := uint64(0); i < listin_count(); i++ {
 			n := listin_get(i)
-			for g := count_t(0); g < count_t(nodes_dependants[n]); g++ {
+			for g := uint64(0); g < uint64(nodes_dependants[n]); g++ {
 				recalcNode(nodes_dependant[n][g])
 			}
 		}
@@ -434,10 +424,10 @@ func recalcNodeList(source []uint64, count count_t) {
 
 func recalcAllNodes() {
 	var temp [NODES]uint64
-	for i := count_t(0); i < count_t(NODES); i++ {
+	for i := uint64(0); i < NODES; i++ {
 		temp[i] = uint64(i)
 	}
-	recalcNodeList(temp[:], count_t(NODES))
+	recalcNodeList(temp[:], uint64(NODES))
 }
 
 /************************************************************
@@ -625,7 +615,7 @@ func step() {
 var transistors uint
 
 func add_nodes_dependant(a uint64, b uint64) {
-	for g := count_t(0); g < count_t(nodes_dependants[a]); g++ {
+	for g := uint64(0); g < uint64(nodes_dependants[a]); g++ {
 		if nodes_dependant[a][g] == b {
 			return
 		}
@@ -636,10 +626,10 @@ func add_nodes_dependant(a uint64, b uint64) {
 }
 
 func setupNodesAndTransistors() {
-	var i count_t
+	var i uint64
 
 	// copy nodes into r/w data structure
-	for i = 0; i < count_t(NODES); i++ {
+	for i = 0; i < NODES; i++ {
 		b := BOOL(NO)
 		if segdefs[i] == 1 {
 			b = YES
@@ -650,8 +640,8 @@ func setupNodesAndTransistors() {
 	}
 
 	// copy transistors into r/w data structure
-	j := count_t(0)
-	for i = 0; i < count_t(TRANSISTORS); i++ {
+	j := uint64(0)
+	for i = 0; i < TRANSISTORS; i++ {
 		gate := uint64(transdefs[i].gate)
 		c1 := uint64(transdefs[i].c1)
 		c2 := uint64(transdefs[i].c2)
@@ -671,7 +661,7 @@ func setupNodesAndTransistors() {
 	}
 
 	/* cross reference transistors in nodes data structures */
-	for i = 0; i < count_t(transistors); i++ {
+	for i = 0; i < uint64(transistors); i++ {
 		gate := transistors_gate[i]
 		c1 := transistors_c1[i]
 		c2 := transistors_c2[i]
@@ -683,9 +673,9 @@ func setupNodesAndTransistors() {
 		nodes_c1c2count[c2]++
 	}
 
-	for i = 0; i < count_t(NODES); i++ {
+	for i = 0; i < NODES; i++ {
 		nodes_dependants[i] = 0
-		for g := count_t(0); g < nodes_gatecount[i]; g++ {
+		for g := uint64(0); g < nodes_gatecount[i]; g++ {
 			t := nodes_gates[i][g]
 			add_nodes_dependant(uint64(i), transistors_c1[t])
 			add_nodes_dependant(uint64(i), transistors_c2[t])
