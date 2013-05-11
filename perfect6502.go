@@ -106,12 +106,12 @@ var (
 	nodes_pullup = DECLARE_BITMAP(NODES)
 	nodes_pulldown = DECLARE_BITMAP(NODES)
 	nodes_value = DECLARE_BITMAP(NODES)
-	nodes_gates		[NODES][NODES]uint64
-	nodes_c1c2s		[NODES][2*NODES]uint64
-	nodes_gatecount	[NODES]uint64
-	nodes_c1c2count	[NODES]uint64
-	nodes_dependants	[NODES]uint64
-	nodes_dependant	[NODES][NODES]uint64
+	nodes_gates			[NODES][NODES]uint64
+	nodes_c1c2s			[NODES][2*NODES]uint64
+	nodes_gatecount		[NODES]uint64
+	nodes_c1c2count		[NODES]uint64
+	nodes_nDependants		[NODES]uint64
+	nodes_dependant		[NODES][NODES]uint64
 )
 
 /*
@@ -119,28 +119,28 @@ var (
  * so we don't bother initializing it properly or special-casing writes.
  */
 
-func set_nodes_pullup(t uint64, state BOOL) {
-	set_bitmap(nodes_pullup, t, state)
+func set_nodes_pullup(node uint64, state BOOL) {
+	set_bitmap(nodes_pullup, node, state)
 }
 
-func get_nodes_pullup(t uint64) BOOL {
-	return get_bitmap(nodes_pullup, t)
+func get_nodes_pullup(node uint64) BOOL {
+	return get_bitmap(nodes_pullup, node)
 }
 
-func set_nodes_pulldown(t uint64, state BOOL) {
-	set_bitmap(nodes_pulldown, t, state)
+func set_nodes_pulldown(node uint64, state BOOL) {
+	set_bitmap(nodes_pulldown, node, state)
 }
 
-func get_nodes_pulldown(t uint64) BOOL {
-	return get_bitmap(nodes_pulldown, t)
+func get_nodes_pulldown(node uint64) BOOL {
+	return get_bitmap(nodes_pulldown, node)
 }
 
-func set_nodes_value(t uint64, state BOOL) {
-	set_bitmap(nodes_value, t, state)
+func set_nodes_value(node uint64, state BOOL) {
+	set_bitmap(nodes_value, node, state)
 }
 
-func get_nodes_value(t uint64) BOOL {
-	return get_bitmap(nodes_value, t)
+func get_nodes_value(node uint64) BOOL {
+	return get_bitmap(nodes_value, node)
 }
 
 /************************************************************
@@ -220,8 +220,8 @@ func listout_clear() {
 	listout.count = 0;
 }
 
-func listout_add(i uint64) {
-	listout.list[listout.count] = i
+func listout_add(node uint64) {
+	listout.list[listout.count] = node
 	listout.count++
 }
 
@@ -251,18 +251,18 @@ func group_clear() {
 	bitmap_clear(groupbitmap, NODES)
 }
 
-func group_add(i uint64) {
-	group[groupcount] = i
+func group_add(node uint64) {
+	group[groupcount] = node
 	groupcount++
-	set_bitmap(groupbitmap, i, 1)
+	set_bitmap(groupbitmap, node, 1)		// TODO(andlabs) - YES?
 }
 
 func group_get(n uint64) uint64 {
 	return group[n]
 }
 
-func group_contains(el uint64) BOOL {
-	return get_bitmap(groupbitmap, el)
+func group_contains(node uint64) BOOL {
+	return get_bitmap(groupbitmap, node)
 }
 
 func group_count() uint64 {
@@ -282,34 +282,34 @@ var (
 	group_contains_hi			BOOL
 )
 
-func addNodeToGroup(n uint64) {
-	if group_contains(n) == YES {
+func addNodeToGroup(node uint64) {
+	if group_contains(node) == YES {
 		return
 	}
 
-	group_add(n)
+	group_add(node)
 
-	if get_nodes_pullup(n) != 0 {
+	if get_nodes_pullup(node) != 0 {
 		group_contains_pullup = YES
 	}
-	if get_nodes_pulldown(n) != 0 {
+	if get_nodes_pulldown(node) != 0 {
 		group_contains_pulldown = YES
 	}
-	if get_nodes_value(n) != 0 {
+	if get_nodes_value(node) != 0 {
 		group_contains_hi = YES
 	}
 
-	if n == vss || n == vcc {
+	if node == vss || node == vcc {
 		return
 	}
 
 	// revisit all transistors that are controlled by this node
-	for t := uint64(0); t < nodes_c1c2count[n]; t++ {
-		tn := nodes_c1c2s[n][t]
+	for t := uint64(0); t < nodes_c1c2count[node]; t++ {
+		tn := nodes_c1c2s[node][t]
 		// if the transistor connects c1 and c2...
 		if get_transistors_on(tn) != 0 {
 			// if original node was connected to c1, continue with c2
-			if transistors_c1[tn] == n {
+			if transistors_c1[tn] == node {
 				addNodeToGroup(transistors_c2[tn])
 			} else {
 				addNodeToGroup(transistors_c1[tn])
@@ -329,11 +329,11 @@ func addAllNodesToGroup(node uint64) {
 }
 
 func getGroupValue() BOOL {
-	if group_contains(vss) == YES {
+	if group_contains(vss) == YES {		// ground is always pulled low
 		return NO
 	}
 
-	if group_contains(vcc) == YES {
+	if group_contains(vcc) == YES {	// Vcc is always pulled high
 		return YES
 	}
 
@@ -409,10 +409,11 @@ func recalcNodeList(source []uint64, count uint64) {
 		 */
 		for i := uint64(0); i < listin_count(); i++ {
 			n := listin_get(i)
-			for g := uint64(0); g < nodes_dependants[n]; g++ {
+			for g := uint64(0); g < nodes_nDependants[n]; g++ {
 				recalcNode(nodes_dependant[n][g])
 			}
 		}
+
 		/*
 		 * make the secondary list our primary list, use
 		 * the data storage of the primary list as the
@@ -615,14 +616,14 @@ func step() {
 var transistors uint		// TODO(andlabs) - make uint64?
 
 func add_nodes_dependant(a uint64, b uint64) {
-	for g := uint64(0); g < nodes_dependants[a]; g++ {
+	for g := uint64(0); g < nodes_nDependants[a]; g++ {
 		if nodes_dependant[a][g] == b {
 			return
 		}
 	}
 
-	nodes_dependant[a][nodes_dependants[a]] = b
-	nodes_dependants[a]++
+	nodes_dependant[a][nodes_nDependants[a]] = b
+	nodes_nDependants[a]++
 }
 
 func setupNodesAndTransistors() {
@@ -674,7 +675,7 @@ func setupNodesAndTransistors() {
 	}
 
 	for i = 0; i < NODES; i++ {
-		nodes_dependants[i] = 0
+		nodes_nDependants[i] = 0
 		for g := uint64(0); g < nodes_gatecount[i]; g++ {
 			t := nodes_gates[i][g]
 			add_nodes_dependant(i, transistors_c1[t])
