@@ -64,7 +64,6 @@ const (
  ************************************************************/
 
 /* the smallest types to fit the numbers */
-type transnum_t uint16
 type count_t uint16
 // TODO(andlabs) - these will all need to be made a single name and type to simplify everything later (preferaly to just uint64 for future compatibility)
 
@@ -130,27 +129,27 @@ var (
  * so we don't bother initializing it properly or special-casing writes.
  */
 
-func set_nodes_pullup(t transnum_t, state BOOL) {
+func set_nodes_pullup(t uint64, state BOOL) {
 	set_bitmap(nodes_pullup, uint64(t), state)
 }
 
-func get_nodes_pullup(t transnum_t) BOOL {
+func get_nodes_pullup(t uint64) BOOL {
 	return get_bitmap(nodes_pullup, uint64(t))
 }
 
-func set_nodes_pulldown(t transnum_t, state BOOL) {
+func set_nodes_pulldown(t uint64, state BOOL) {
 	set_bitmap(nodes_pulldown, uint64(t), state)
 }
 
-func get_nodes_pulldown(t transnum_t) BOOL {
+func get_nodes_pulldown(t uint64) BOOL {
 	return get_bitmap(nodes_pulldown, uint64(t))
 }
 
-func set_nodes_value(t transnum_t, state BOOL) {
+func set_nodes_value(t uint64, state BOOL) {
 	set_bitmap(nodes_value, uint64(t), state)
 }
 
-func get_nodes_value(t transnum_t) BOOL {
+func get_nodes_value(t uint64) BOOL {
 	return get_bitmap(nodes_value, uint64(t))
 }
 
@@ -169,10 +168,10 @@ var (
 )
 
 //#ifdef BROKEN_TRANSISTORS
-var broken_transistor = ^transnum_t(0)		// TODO const?
+var broken_transistor = ^uint64(0)		// TODO const?
 //#endif
 
-func set_transistors_on(t transnum_t, state BOOL) {
+func set_transistors_on(t uint64, state BOOL) {
 //#ifdef BROKEN_TRANSISTORS
 	if t == broken_transistor {
 		return
@@ -181,7 +180,7 @@ func set_transistors_on(t transnum_t, state BOOL) {
 	set_bitmap(transistors_on, uint64(t), state)
 }
 
-func get_transistors_on(t transnum_t) BOOL {
+func get_transistors_on(t uint64) BOOL {
 	return get_bitmap(transistors_on, uint64(t))
 }
 
@@ -300,13 +299,13 @@ func addNodeToGroup(n uint64) {
 
 	group_add(n)
 
-	if get_nodes_pullup(transnum_t(n)) != 0 {
+	if get_nodes_pullup(uint64(n)) != 0 {
 		group_contains_pullup = YES
 	}
-	if get_nodes_pulldown(transnum_t(n)) != 0 {
+	if get_nodes_pulldown(uint64(n)) != 0 {
 		group_contains_pulldown = YES
 	}
-	if get_nodes_value(transnum_t(n)) != 0 {
+	if get_nodes_value(uint64(n)) != 0 {
 		group_contains_hi = YES
 	}
 
@@ -316,7 +315,7 @@ func addNodeToGroup(n uint64) {
 
 	// revisit all transistors that are controlled by this node
 	for t := count_t(0); t < nodes_c1c2count[n]; t++ {
-		tn := transnum_t(nodes_c1c2s[n][t])
+		tn := uint64(nodes_c1c2s[n][t])
 		// if the transistor connects c1 and c2...
 		if get_transistors_on(tn) != 0 {
 			// if original node was connected to c1, continue with c2
@@ -383,11 +382,11 @@ func recalcNode(node uint64) {
 	 *   for the next run
 	 */
 	for i := count_t(0); i < group_count(); i++ {
-		nn := transnum_t(group_get(i))
+		nn := uint64(group_get(i))
 		if get_nodes_value(nn) != newv {
 			set_nodes_value(nn, newv)
 			for t := count_t(0); t < nodes_gatecount[nn]; t++ {
-				tn := transnum_t(nodes_gates[nn][t])
+				tn := uint64(nodes_gates[nn][t])
 				set_transistors_on(tn, BOOL_not(get_transistors_on(tn)))
 			}
 			listout_add(uint64(nn))
@@ -448,13 +447,13 @@ func recalcAllNodes() {
  ************************************************************/
 
 func setNode(nn uint64, state BOOL) {
-	set_nodes_pullup(transnum_t(nn), state)
-	set_nodes_pulldown(transnum_t(nn), BOOL_not(state))
+	set_nodes_pullup(uint64(nn), state)
+	set_nodes_pulldown(uint64(nn), BOOL_not(state))
 	recalcNodeList([]uint64{ nn }, 1)
 }
 
 func isNodeHigh(nn uint64) BOOL {
-	return get_nodes_value(transnum_t(nn))
+	return get_nodes_value(uint64(nn))
 }
 
 /************************************************************
@@ -645,7 +644,7 @@ func setupNodesAndTransistors() {
 		if segdefs[i] == 1 {
 			b = YES
 		}
-		set_nodes_pullup(transnum_t(i), b)
+		set_nodes_pullup(uint64(i), b)
 		nodes_gatecount[i] = 0
 		nodes_c1c2count[i] = 0
 	}
@@ -697,11 +696,11 @@ func setupNodesAndTransistors() {
 func resetChip() {
 	// all nodes are down
 	for nn := uint64(0); nn < NODES; nn++ {
-		set_nodes_value(transnum_t(nn), 0)
+		set_nodes_value(uint64(nn), 0)
 	}
 
 	// all transistors are off
-	for tn := transnum_t(0); tn < transnum_t(TRANSISTORS); tn++ {
+	for tn := uint64(0); tn < TRANSISTORS; tn++ {
 		set_transistors_on(tn, NO)
 	}
 
