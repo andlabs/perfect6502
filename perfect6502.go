@@ -72,12 +72,13 @@ const (
 
 type bitmap_t uint64
 const (
+	sizeof_bitmap_t = 8
 	BITMAP_SHIFT = 6
 	BITMAP_MASK = 63
 )
 
 func WORDS_FOR_BITS(a uint64) uint64 {
-	return (a / (4 * 8)) + 1
+	return (a / (sizeof_bitmap_t * 8)) + 1
 }
 
 func DECLARE_BITMAP(count uint64) []bitmap_t {
@@ -224,7 +225,7 @@ func lists_switch() {
 }
 
 func listout_clear() {
-	listout.count = 0;
+	listout.count = 0
 }
 
 func listout_add(node uint64) {
@@ -664,7 +665,7 @@ func setupNodesAndTransistors() {
 		fmt.Printf("transistors: %d\n", transistors)
 	}
 
-	/* cross reference transistors in nodes data structures */
+	// cross reference transistors in nodes data structures
 	for i = 0; i < uint64(transistors); i++ {
 		gate := transistors_gate[i]
 		c1 := transistors_c1[i]
