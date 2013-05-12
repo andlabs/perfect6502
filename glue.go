@@ -11,7 +11,7 @@ func fatalf(format string, args ...interface{}) {
 }
 
 func SETZ(a byte) {
-	Z = a == 0
+	Z = a != 0		// set Z to boolean value of a, NOT TO WHETHER a IS ZERO!!!!!!!!!!!!
 }
 
 func SETSZ(a byte) {

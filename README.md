@@ -2,25 +2,6 @@ perfect6502 ported to Go
 ===========
 Pietro Gagliardi (andlabs)<br>2013
 
-YAY BROKEN THINGS
-
-```
-10 PRINT "hello, world"
-20 GOTO 10
-```
-
-causes cbmbasic to bail out with `BREAK`; this does not happen on the original perfect6502
-
-
-
-
-
-
-
-
-
-
-
 I intend to use this to create a general-purpose perfect emulator core. Things planned:
 - figure out the proper terminology: are node values high/low? pullups? pulldowns?
 - changing all external pins to use channels so I can hook things together
