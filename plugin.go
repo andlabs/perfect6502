@@ -68,7 +68,7 @@ func compare(s string) bool {
 	for i := 0; i < len(s); i++ {
 		CHRGET()
 		if A != s[i] {
-			set_chrptr(chrptr);
+			set_chrptr(chrptr)
 			return false
 		}
 	}
@@ -102,7 +102,7 @@ func get_word() uint16 {
 
 func get_byte() byte {
 	call(0xB79E)
-	return X;
+	return X
 }
 
 func get_string() string {
@@ -147,7 +147,7 @@ const (
 
 // originally error(), renamed to avoid conflict with Go error
 func error_x(index byte) uint16 {
-	X = index;
+	X = index
 	return 0xA437		// error handler
 }
 

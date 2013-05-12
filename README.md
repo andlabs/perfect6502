@@ -4,6 +4,8 @@ Pietro Gagliardi (andlabs)<br>2013
 
 I intend to use this to create a general-purpose perfect emulator core. Things planned:
 - figure out the proper terminology: are node values high/low? pullups? pulldowns?
+	- or should I rename everything to isNodeHigh/isPullup/isPulldown... or would that still have an edge case
+		- carriesCurrent? (for value)
 - changing all external pins to use channels so I can hook things together
 	- this means the simulator will run in a goroutine and the clock will be automated
 
@@ -16,3 +18,4 @@ or just search for `TODO(andlabs)`
 also TODO
 - clean up the inconsistent licensing information inclusion
 - make the comparative tester useful by seeing which chip's output format to use for the other
+- replace character output printfs with direct writes to see if it makes printing characters to the console go any faster

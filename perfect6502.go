@@ -501,15 +501,15 @@ func readA() byte {
 }
 
 func readX() byte {
-	return read8(x0,x1,x2,x3,x4,x5,x6,x7);
+	return read8(x0,x1,x2,x3,x4,x5,x6,x7)
 }
 
 func readY() byte {
-	return read8(y0,y1,y2,y3,y4,y5,y6,y7);
+	return read8(y0,y1,y2,y3,y4,y5,y6,y7)
 }
 
 func readP() byte {
-	return read8(p0,p1,p2,p3,p4,p5,p6,p7);
+	return read8(p0,p1,p2,p3,p4,p5,p6,p7)
 }
 
 func readIR() byte {
@@ -517,15 +517,15 @@ func readIR() byte {
 }
 
 func readSP() byte {
-	return read8(s0,s1,s2,s3,s4,s5,s6,s7);
+	return read8(s0,s1,s2,s3,s4,s5,s6,s7)
 }
 
 func readPCL() byte {
-	return read8(pcl0,pcl1,pcl2,pcl3,pcl4,pcl5,pcl6,pcl7);
+	return read8(pcl0,pcl1,pcl2,pcl3,pcl4,pcl5,pcl6,pcl7)
 }
 
 func readPCH() byte {
-	return read8(pch0,pch1,pch2,pch3,pch4,pch5,pch6,pch7);
+	return read8(pch0,pch1,pch2,pch3,pch4,pch5,pch6,pch7)
 }
 
 func readPC() uint16 {

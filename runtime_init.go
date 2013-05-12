@@ -47,12 +47,12 @@ func init_monitor() {
 	 * after a RESET), so RESET jumps to 0xF000, which contains
 	 * a JSR to the actual start of cbmbasic
 	 */
-	memory[0xF000] = 0x20;
-	memory[0xF001] = 0x94;
-	memory[0xF002] = 0xE3;
+	memory[0xF000] = 0x20
+	memory[0xF001] = 0x94
+	memory[0xF002] = 0xE3
 	
-	memory[0xFFFC] = 0x00;
-	memory[0xFFFD] = 0xF0;
+	memory[0xFFFC] = 0x00
+	memory[0xFFFD] = 0xF0
 }
 
 func handle_monitor() {

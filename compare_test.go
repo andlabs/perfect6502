@@ -35,7 +35,7 @@ func setup_memory(length int, b1 byte, b2 byte, b3 byte, A byte, X byte, Y byte,
 	memory[0xFFFC] = RESET & 0xFF
 	memory[0xFFFD] = RESET >> 8
 	memory[RESET + 0x00] = 0xA2	// LDA #S
-	memory[RESET + 0x01] = S;
+	memory[RESET + 0x01] = S
 	memory[RESET + 0x02] = 0x9A	// TXS
 	memory[RESET + 0x03] = 0xA9	// LDA #P
 	memory[RESET + 0x04] = P
@@ -119,7 +119,7 @@ func perfect_measure_instruction() int {
 		var db uint8
 		var r_w bool
 
-		full_step(&ab, &db, &r_w);
+		full_step(&ab, &db, &r_w)
 
 		if state == STATE_DURING_INSTRUCTION && ab > trigger2 {
 			/*

@@ -285,8 +285,8 @@ func plugin_off() {
 
 // TODO(andlabs) - was static; this makes it exported (worry?)
 func SETMSG() {
-		kernal_msgflag = A
-		A = kernal_status
+	kernal_msgflag = A
+	A = kernal_status
 }
 
 // TODO(andlabs) - was static; this makes it exported (worry?)
@@ -583,7 +583,7 @@ printf("CHROUT: %d @ %x,%x,%x,%x\n", A, a, b, c, d);
 		} else {
 			switch A {
 			case 5:
-				set_color(COLOR_WHITE);
+				set_color(COLOR_WHITE)
 			case 10:
 				// do nothing (what is this byte? TODO(andlabs))
 			case 13:
@@ -603,7 +603,7 @@ printf("CHROUT: %d @ %x,%x,%x,%x\n", A, a, b, c, d);
 			case 129:
 				set_color(COLOR_ORANGE)
 			case 144:
-				set_color(COLOR_BLACK);
+				set_color(COLOR_BLACK)
 			case 145:		// CSR UP
 				up_cursor()
 			case 147:		// clear screen
@@ -659,7 +659,7 @@ func LOAD() {
 	var b []byte
 
 	if A != 0 {
-		fatalf("UNIMPL: VERIFY");
+		fatalf("UNIMPL: VERIFY")
 	}
 	if kernal_filename_len == 0 {
 		goto missing_file_name
@@ -756,8 +756,8 @@ func LOAD() {
 			RAM[old_memp] = byte(memp & 0xFF)
 			RAM[old_memp+1] = byte(memp >> 8)
 		}
-		RAM[memp] = 0;
-		RAM[memp+1] = 0;
+		RAM[memp] = 0
+		RAM[memp+1] = 0
 		dirp.Close()
 		end = memp + 2
 /*
@@ -978,7 +978,7 @@ func PLOT() {
 		Y = byte(CX)
 		X = byte(CY)
 	} else {
-		fatalf("UNIMPL: set cursor %d %d\n", Y, X);
+		fatalf("UNIMPL: set cursor %d %d\n", Y, X)
 	}
 }
 
