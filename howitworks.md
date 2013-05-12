@@ -82,7 +82,7 @@ On power on,
 	2. Set clk0, rdy, irq, and nmi to high (pull-up)
 4. Recalculate all nodes
 5. Do any other initialization; for the 6502:
-	1. Wait 16 cycles
+	1. Wait 8 cycles
 	2. Set res to high (pull-up) - this releases the reset line
 
 ## So what happens on each clock edge change?
