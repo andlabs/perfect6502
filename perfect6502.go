@@ -43,7 +43,7 @@ const (
 	high = true
 	low = false
 	unknown = false
-	// TODO(andlabs) - split values?
+	// TODO(andlabs) - split states for pullup/pulldown to true/false?
 
 	// transistor states
 	on = true
@@ -177,7 +177,7 @@ func set_transistors_on(t uint64, state bool) {
 	set_bitmap(transistors_on, t, state)
 }
 
-func get_transistors_on(t uint64) bool {
+func transistor_state(t uint64) bool {
 	return get_bitmap(transistors_on, t)
 }
 
@@ -314,7 +314,7 @@ func addNodeToGroup(node uint64) {
 	for t := uint64(0); t < nodes_c1c2count[node]; t++ {
 		tn := nodes_c1c2s[node][t]
 		// if the transistor connects c1 and c2...
-		if get_transistors_on(tn) {
+		if transistor_state(tn) == on {
 			// if original node was connected to c1, continue with c2
 			if transistors_c1[tn] == node {
 				addNodeToGroup(transistors_c2[tn])
@@ -377,7 +377,7 @@ func recalcNode(node uint64) {
 			set_nodes_value(nn, newv)
 			for t := uint64(0); t < nodes_gatecount[nn]; t++ {
 				tn := nodes_gates[nn][t]
-				set_transistors_on(tn, !get_transistors_on(tn))
+				set_transistors_on(tn, !transistor_state(tn))
 			}
 			listout_add(nn)
 		}
