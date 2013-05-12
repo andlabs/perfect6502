@@ -38,12 +38,19 @@ func init() {
  *
  ************************************************************/
 
-type BOOL uint
-
 const (
-	YES = 1
-	NO = 0
+	// node states/values
+	high = true
+	low = false
+	unknown = false
+	// TODO(andlabs) - split values?
+
+	// transistor states
+	on = true
+	off = false
 )
+
+// TODO(andlabs) - maybe make some boolean expressions more explicit?
 
 /************************************************************
  *
@@ -83,16 +90,16 @@ func bitmap_clear(bitmap []bitmap_t, count uint64) {
 	}
 }
 
-func set_bitmap(bitmap []bitmap_t, index uint64, state BOOL) {
-	if state != 0 {
+func set_bitmap(bitmap []bitmap_t, index uint64, state bool) {
+	if state {
 		bitmap[index >> BITMAP_SHIFT] |= (1 << (index & BITMAP_MASK))
 	} else {
 		bitmap[index >> BITMAP_SHIFT] &^= (1 << (index & BITMAP_MASK))
 	}
 }
 
-func get_bitmap(bitmap []bitmap_t, index uint64) BOOL {
-	return BOOL((bitmap[index >> BITMAP_SHIFT] >> (index & BITMAP_MASK)) & 1)
+func get_bitmap(bitmap []bitmap_t, index uint64) bool {
+	return ((bitmap[index >> BITMAP_SHIFT] >> (index & BITMAP_MASK)) & 1) == 1
 }
 
 /************************************************************
@@ -119,27 +126,27 @@ var (
  * so we don't bother initializing it properly or special-casing writes.
  */
 
-func set_nodes_pullup(node uint64, state BOOL) {
+func set_nodes_pullup(node uint64, state bool) {
 	set_bitmap(nodes_pullup, node, state)
 }
 
-func get_nodes_pullup(node uint64) BOOL {
+func get_nodes_pullup(node uint64) bool {
 	return get_bitmap(nodes_pullup, node)
 }
 
-func set_nodes_pulldown(node uint64, state BOOL) {
+func set_nodes_pulldown(node uint64, state bool) {
 	set_bitmap(nodes_pulldown, node, state)
 }
 
-func get_nodes_pulldown(node uint64) BOOL {
+func get_nodes_pulldown(node uint64) bool {
 	return get_bitmap(nodes_pulldown, node)
 }
 
-func set_nodes_value(node uint64, state BOOL) {
+func set_nodes_value(node uint64, state bool) {
 	set_bitmap(nodes_value, node, state)
 }
 
-func get_nodes_value(node uint64) BOOL {
+func get_nodes_value(node uint64) bool {
 	return get_bitmap(nodes_value, node)
 }
 
@@ -161,7 +168,7 @@ var (
 var broken_transistor = ^uint64(0)		// TODO const?
 //#endif
 
-func set_transistors_on(t uint64, state BOOL) {
+func set_transistors_on(t uint64, state bool) {
 //#ifdef BROKEN_TRANSISTORS
 	if t == broken_transistor {
 		return
@@ -170,7 +177,7 @@ func set_transistors_on(t uint64, state BOOL) {
 	set_bitmap(transistors_on, t, state)
 }
 
-func get_transistors_on(t uint64) BOOL {
+func get_transistors_on(t uint64) bool {
 	return get_bitmap(transistors_on, t)
 }
 
@@ -254,14 +261,14 @@ func group_clear() {
 func group_add(node uint64) {
 	group[groupcount] = node
 	groupcount++
-	set_bitmap(groupbitmap, node, 1)		// TODO(andlabs) - YES?
+	set_bitmap(groupbitmap, node, true)
 }
 
 func group_get(n uint64) uint64 {
 	return group[n]
 }
 
-func group_contains(node uint64) BOOL {
+func group_contains(node uint64) bool {
 	return get_bitmap(groupbitmap, node)
 }
 
@@ -275,28 +282,28 @@ func group_count() uint64 {
  *
  ************************************************************/
 
-// TODO(andlabs) - make these into actual booleans (for BOOL, need to handle case where some of the segdefs are not either 0 or 1... 1701, for instance)... same for group_contains and some other stuff...
 var (
-	group_contains_pullup		BOOL
-	group_contains_pulldown	BOOL
-	group_contains_hi			BOOL
+	group_contains_pullup		bool
+	group_contains_pulldown	bool
+	group_contains_hi			bool
 )
 
 func addNodeToGroup(node uint64) {
-	if group_contains(node) == YES {
+	if group_contains(node) {
 		return
 	}
 
 	group_add(node)
 
-	if get_nodes_pullup(node) != 0 {
-		group_contains_pullup = YES
+	// TODO change constant names?
+	if get_nodes_pullup(node) == high {
+		group_contains_pullup = true
 	}
-	if get_nodes_pulldown(node) != 0 {
-		group_contains_pulldown = YES
+	if get_nodes_pulldown(node) == high {
+		group_contains_pulldown = true
 	}
-	if get_nodes_value(node) != 0 {
-		group_contains_hi = YES
+	if get_nodes_value(node) == high {
+		group_contains_hi = true
 	}
 
 	if node == vss || node == vcc {
@@ -307,7 +314,7 @@ func addNodeToGroup(node uint64) {
 	for t := uint64(0); t < nodes_c1c2count[node]; t++ {
 		tn := nodes_c1c2s[node][t]
 		// if the transistor connects c1 and c2...
-		if get_transistors_on(tn) != 0 {
+		if get_transistors_on(tn) {
 			// if original node was connected to c1, continue with c2
 			if transistors_c1[tn] == node {
 				addNodeToGroup(transistors_c2[tn])
@@ -321,38 +328,31 @@ func addNodeToGroup(node uint64) {
 func addAllNodesToGroup(node uint64) {
 	group_clear()
 
-	group_contains_pullup = NO
-	group_contains_pulldown = NO
-	group_contains_hi = NO
+	group_contains_pullup = false
+	group_contains_pulldown = false
+	group_contains_hi = false
 
 	addNodeToGroup(node)
 }
 
-func getGroupValue() BOOL {
-	if group_contains(vss) == YES {		// ground is always pulled low
-		return NO
+func getGroupValue() bool {
+	if group_contains(vss) {		// ground is always pulled low
+		return low
 	}
 
-	if group_contains(vcc) == YES {	// Vcc is always pulled high
-		return YES
+	if group_contains(vcc) {		// Vcc is always pulled high
+		return high
 	}
 
-	if group_contains_pulldown == YES {
-		return NO
+	if group_contains_pulldown {
+		return low
 	}
 
-	if group_contains_pullup == YES {
-		return YES
+	if group_contains_pullup {
+		return high
 	}
 
 	return group_contains_hi
-}
-
-func BOOL_not(b BOOL) BOOL {
-	if b == NO {
-		return YES
-	}
-	return NO
 }
 
 func recalcNode(node uint64) {
@@ -377,7 +377,7 @@ func recalcNode(node uint64) {
 			set_nodes_value(nn, newv)
 			for t := uint64(0); t < nodes_gatecount[nn]; t++ {
 				tn := nodes_gates[nn][t]
-				set_transistors_on(tn, BOOL_not(get_transistors_on(tn)))
+				set_transistors_on(tn, !get_transistors_on(tn))
 			}
 			listout_add(nn)
 		}
@@ -437,13 +437,13 @@ func recalcAllNodes() {
  *
  ************************************************************/
 
-func setNode(nn uint64, state BOOL) {
+func setNode(nn uint64, state bool) {
 	set_nodes_pullup(nn, state)
-	set_nodes_pulldown(nn, BOOL_not(state))
+	set_nodes_pulldown(nn, !state)
 	recalcNodeList([]uint64{ nn }, 1)
 }
 
-func isNodeHigh(nn uint64) BOOL {
+func isNodeHigh(nn uint64) bool {
 	return get_nodes_value(nn)
 }
 
@@ -453,15 +453,22 @@ func isNodeHigh(nn uint64) BOOL {
  *
  ************************************************************/
 
+func nhv(node uint64) byte {
+	if isNodeHigh(node) {
+		return 1
+	}
+	return 0
+}
+
 func read8(n0,n1,n2,n3,n4,n5,n6,n7 uint64) byte {
-	return (byte(isNodeHigh(n0) << 0) |
-		byte(isNodeHigh(n1) << 1) |
-		byte(isNodeHigh(n2) << 2) |
-		byte(isNodeHigh(n3) << 3) |
-		byte(isNodeHigh(n4) << 4) |
-		byte(isNodeHigh(n5) << 5) |
-		byte(isNodeHigh(n6) << 6) |
-		byte(isNodeHigh(n7) << 7))
+	return (byte(nhv(n0) << 0) |
+		byte(nhv(n1) << 1) |
+		byte(nhv(n2) << 2) |
+		byte(nhv(n3) << 3) |
+		byte(nhv(n4) << 4) |
+		byte(nhv(n5) << 5) |
+		byte(nhv(n6) << 6) |
+		byte(nhv(n7) << 7))
 }
 
 func readAddressBus() uint16 {
@@ -479,12 +486,12 @@ var (
 
 func writeDataBus(d byte) {
 	for i := 0; i < 8; i++ {
-		setNode(dbnodes[i], BOOL(d & 1))
+		setNode(dbnodes[i], (d & 1) == 1)
 		d >>= 1
 	}
 }
 
-func readRW() BOOL {
+func readRW() bool {
 	return isNodeHigh(rw)
 }
 
@@ -538,7 +545,7 @@ func chipStatus() {
 	d := readDataBus()
 	r_w := isNodeHigh(rw)
 
-	fmt.Printf("halfcyc:%d phi0:%d AB:%04X D:%02X RnW:%d PC:%04X A:%02X X:%02X Y:%02X SP:%02X P:%02X IR:%02X",
+	fmt.Printf("halfcyc:%d phi0:%d AB:%04X D:%02X RnW:%v PC:%04X A:%02X X:%02X Y:%02X SP:%02X P:%02X IR:%02X",
 			cycle,
 			clk,
 			a,
@@ -552,8 +559,8 @@ func chipStatus() {
 			readP(),
 			readIR())
 
-	if clk != 0 {
-		if r_w != 0 {
+	if clk {
+		if r_w {
 			fmt.Printf(" R$%04X=$%02X", a, memory[a])
 		} else {
 			fmt.Printf(" W$%04X=$%02X", a, d)
@@ -580,7 +587,7 @@ func mWrite(a uint16, d byte) {
 }
 
 func handleMemory() {
-	if isNodeHigh(rw) == YES {
+	if isNodeHigh(rw) {
 		writeDataBus(mRead(readAddressBus()))
 	} else {
 		mWrite(readAddressBus(), readDataBus())
@@ -597,10 +604,10 @@ func step() {
 	clk := isNodeHigh(clk0)
 
 	// invert clock
-	setNode(clk0, BOOL_not(clk))
+	setNode(clk0, !clk)
 
-	/* handle memory reads and writes */
-	if clk == 0 {
+	// handle memory reads and writes
+	if clk == low {		// falling edge
 		handleMemory()
 	}
 
@@ -631,11 +638,7 @@ func setupNodesAndTransistors() {
 
 	// copy nodes into r/w data structure
 	for i = 0; i < NODES; i++ {
-		b := BOOL(NO)
-		if segdefs[i] == 1 {
-			b = YES
-		}
-		set_nodes_pullup(i, b)
+		set_nodes_pullup(i, segdefs[i])
 		nodes_gatecount[i] = 0
 		nodes_c1c2count[i] = 0
 	}
@@ -647,9 +650,9 @@ func setupNodesAndTransistors() {
 		c1 := transdefs[i].c1
 		c2 := transdefs[i].c2
 		/* skip duplicate transistors */
-		found := BOOL(NO)
+		found := false
 
-		if found == NO {
+		if !found {
 			transistors_gate[j] = gate
 			transistors_c1[j] = c1
 			transistors_c2[j] = c2
@@ -687,20 +690,20 @@ func setupNodesAndTransistors() {
 func resetChip() {
 	// all nodes are down
 	for nn := uint64(0); nn < NODES; nn++ {
-		set_nodes_value(nn, 0)
+		set_nodes_value(nn, low)
 	}
 
 	// all transistors are off
 	for tn := uint64(0); tn < TRANSISTORS; tn++ {
-		set_transistors_on(tn, NO)
+		set_transistors_on(tn, off)
 	}
 
-	setNode(res, 0)
-	setNode(clk0, 1)
-	setNode(rdy, 1)
-	setNode(so, 0)
-	setNode(irq, 1)
-	setNode(nmi, 1)
+	setNode(res, low)
+	setNode(clk0, high)
+	setNode(rdy, high)
+	setNode(so, low)
+	setNode(irq, high)
+	setNode(nmi, low)
 
 	recalcAllNodes()
 
@@ -710,7 +713,7 @@ func resetChip() {
 	}
 
 	// release RESET
-	setNode(res, 1)
+	setNode(res, high)
 
 	cycle = 0
 }
