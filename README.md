@@ -32,4 +32,6 @@ Also host-OS-dependent things (console access, SETTIM, system()) are not impleme
 
 or just search for `TODO(andlabs)`
 
-also TODO - clean up the inconsistent licensing information inclusion
+also TODO
+- clean up the inconsistent licensing information inclusion
+- make the comparative tester useful by seeing which chip's output format to use for the other
