@@ -3,6 +3,7 @@ package main
 import (
 //"fmt"
 	"os"
+	"time"
 )
 
 /* XXX hook up memory[] with RAM[] in runtime.c */
@@ -56,8 +57,69 @@ func init_monitor() {
 	memory[0xFFFD] = 0xF0
 }
 
-func monitor() {
-	for addr := range ab_chan {
+func monitor(monitor_clock <-chan time.Time) {
+	edge := high		// start on falling edge
+	call_kernal := false
+
+	for _ = range monitor_clock {
+		edge = !edge
+
+		// on the rising edge, call the kernal
+		if edge == high && call_kernal {
+			// get register status out of 6502
+			regs := <-regs_chan
+			A = regs.A
+			X = regs.X
+			Y = regs.Y
+			S = regs.S
+			P = regs.P
+			N = (P >> 7) == 1
+			Z = ((P >> 1) & 1) == 1
+			C = (P & 1) == 1
+
+			kernal_dispatch()
+
+			// encode processor status
+			P &= 0x7C				// clear N, Z, C
+			if N {
+				P |= 1 << 7
+			}
+			if Z {
+				P |= 1 << 1
+			}
+			if C {
+				P |= 1
+			}
+
+			/*
+			 * all KERNAL calls make the 6502 jump to $F800, so we
+			 * put code there that loads the return state of the
+			 * KERNAL function and returns to the caller
+			 */
+			memory[0xF800] = 0xA9		// LDA #P
+			memory[0xF801] = P
+			memory[0xF802] = 0x48		// PHA
+			memory[0xF803] = 0xA9		// LHA #A
+			memory[0xF804] = A
+			memory[0xF805] = 0xA2		// LDX #X
+			memory[0xF806] = X
+			memory[0xF807] = 0xA0		// LDY #Y
+			memory[0xF808] = Y
+			memory[0xF809] = 0x28		// PLP
+			memory[0xF80A] = 0x60		// RTS
+			/*
+			 * XXX we could do RTI instead of PLP/RTS, but RTI seems to be
+			 * XXX broken in the chip dump - after the KERNAL call at 0xFF90,
+			 * XXX the 6502 gets heavily confused about its program counter
+			 * XXX and executes garbage instructions
+			 */
+
+			call_kernal = false
+			continue
+		}
+
+		// falling edge; handle memory accesses
+		addr := <-ab_chan
 		rw := <-rw_chan
 //fmt.Printf("rw:%v addr:$%04X ", rw, addr)
 		if rw == high {		// read
@@ -68,53 +130,7 @@ func monitor() {
 
 				if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
 //fmt.Printf("HOOK ")
-					// get register status out of 6502
-					regs := <-regs_chan
-					A = regs.A
-					X = regs.X
-					Y = regs.Y
-					S = regs.S
-					P = regs.P
-					N = (P >> 7) == 1
-					Z = ((P >> 1) & 1) == 1
-					C = (P & 1) == 1
-
-					kernal_dispatch()
-
-					// encode processor status
-					P &= 0x7C				// clear N, Z, C
-					if N {
-						P |= 1 << 7
-					}
-					if Z {
-						P |= 1 << 1
-					}
-					if C {
-						P |= 1
-					}
-
-					/*
-					 * all KERNAL calls make the 6502 jump to $F800, so we
-					 * put code there that loads the return state of the
-					 * KERNAL function and returns to the caller
-					 */
-					memory[0xF800] = 0xA9		// LDA #P
-					memory[0xF801] = P
-					memory[0xF802] = 0x48		// PHA
-					memory[0xF803] = 0xA9		// LHA #A
-					memory[0xF804] = A
-					memory[0xF805] = 0xA2		// LDX #X
-					memory[0xF806] = X
-					memory[0xF807] = 0xA0		// LDY #Y
-					memory[0xF808] = Y
-					memory[0xF809] = 0x28		// PLP
-					memory[0xF80A] = 0x60		// RTS
-					/*
-					 * XXX we could do RTI instead of PLP/RTS, but RTI seems to be
-					 * XXX broken in the chip dump - after the KERNAL call at 0xFF90,
-					 * XXX the 6502 gets heavily confused about its program counter
-					 * XXX and executes garbage instructions
-					 */
+					call_kernal = true
 				}
 			}
 

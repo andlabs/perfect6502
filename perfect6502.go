@@ -33,9 +33,6 @@ func init() {
 	DEBUG = true		// declared in runtime.go
 }
 
-// set by user program
-var clock_chan <-chan time.Time
-
 // pin channels
 var (
 	rdy_chan		= make(chan bool)
@@ -642,20 +639,6 @@ func chiploop() {
 			// invert clock
 			setNode(clk0, !clk)
 
-			// handle memory reads and writes; call out to monitor
-			if clk == low && isNodeHigh(res) == high {
-				// TODO(andlabs) - is this the thing that signals?
-				ab_chan <- readAddressBus()
-			}
-/*			if clk == low {		// falling edge
-				handleMemory()
-			} else {			// rising edge; this is what the original cbmbasic.c did
-				if monitor_hook != nil {
-					monitor_hook()		// TODO(andlabs) is this what actual hardware monitors do...?
-				}
-			}
-*/
-
 			cycle++
 		case d := <-rdy_chan:
 			setNode(rdy, d)
@@ -677,6 +660,7 @@ func chiploop() {
 		// each of these do nothing other than the send
 		case clk1_chan <- isNodeHigh(clk1out):
 		case sync_chan <- isNodeHigh(sync_):
+		case ab_chan <- readAddressBus():
 		case db_chan <- readDataBus():
 		case rw_chan <- isNodeHigh(rw):
 		case clk2_chan <- isNodeHigh(clk2out):
@@ -766,7 +750,7 @@ func setupNodesAndTransistors() {
 	}
 }
 
-func dochip() {
+func dochip(chip_clock <-chan time.Time) {
 	// set up data structures for efficient emulation
 	setupNodesAndTransistors()
 
@@ -801,7 +785,7 @@ func dochip() {
 	// release RESET
 	res_chan <- high
 
-	for _ = range clock_chan {		// apparently the syntax requires a variable for a range clause
+	for _ = range chip_clock {		// apparently the syntax requires a variable for a range clause
 		clk0_chan <- true
 	}
 }
