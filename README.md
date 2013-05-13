@@ -19,7 +19,7 @@ also TODO
 - clean up the inconsistent licensing information inclusion
 - make the comparative tester useful by seeing which chip's output format to use for the other
 - replace character output printfs with direct writes to see if it makes printing characters to the console go any faster
-
+- right now, the monitor is running on the same clock as the CPU, and it is assumed they are in sync; a better option is to use clk2, but I would need to make it a signaling output rather than a requested output, otherwise the system gets caught up in a busy loop - provide some mechanism for clocks...
 
 
 
