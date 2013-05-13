@@ -52,8 +52,6 @@ var (
 	res_chan		= make(chan bool, 1)
 )
 
-var rw_changed bool
-
 /************************************************************
  *
  * Libc Functions and Basic Data Types
@@ -464,10 +462,6 @@ func setNode(nn uint64, state bool) {
 	set_nodes_pullup(nn, state)
 	set_nodes_pulldown(nn, !state)
 	recalcNodeList([]uint64{ nn }, 1)
-	if nn == rw && !rw_changed {
-		rw_changed = true
-//		rw_chan <- state
-	}
 }
 
 func isNodeHigh(nn uint64) bool {
@@ -640,6 +634,7 @@ func chiploop() {
 
 			// handle memory reads and writes; call out to monitor
 			if clk == low && isNodeHigh(res) == high {
+				// TODO(andlabs) - is this the thing that signals?
 				ab_chan <- readAddressBus()
 			}
 /*			if clk == low {		// falling edge
@@ -666,25 +661,16 @@ func chiploop() {
 			setNode(res, d)
 			if d == high {
 				cycle = 0
-				rw_changed = false
 			}
 
 		// output pins
-		// TODO(andlabs) only when clock is low?
 		// each of these do nothing other than the send
 		case clk1_chan <- isNodeHigh(clk1out):
 		case sync_chan <- isNodeHigh(sync_):
 		case db_chan <- readDataBus():
 		case rw_chan <- isNodeHigh(rw):
 		case clk2_chan <- isNodeHigh(clk2out):
-
-/*		default:
-fmt.Printf("default\n")
-			if rw_changed && isNodeHigh(res) == high {		// don't trigger memory accesses during reset
-				rw_changed = false
-				rw_chan <- isNodeHigh(rw)
-			}
-*/		}
+		}
 	}
 }
 
