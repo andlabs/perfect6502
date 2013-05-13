@@ -1,7 +1,7 @@
 package main
 
 import (
-"fmt"
+//"fmt"
 	"os"
 )
 
@@ -56,7 +56,7 @@ func init_monitor() {
 	memory[0xFFFD] = 0xF0
 }
 
-func getAddr() (a uint16) {
+/*func getAddr() (a uint16) {
 	for i := int(15); i >= 0; i-- {
 		if <-ab_chan[i] == high {
 			a |= 1
@@ -65,7 +65,7 @@ func getAddr() (a uint16) {
 	}
 	return a
 }
-
+*/
 func getData() (d byte) {
 	for i := int(7); i >= 0; i-- {
 		if <-db_chan[i] == high {
@@ -84,17 +84,17 @@ func sendData(d byte) {
 }
 
 func monitor() {
-	for rw := range rw_chan {
-		addr := getAddr()
-fmt.Printf("rw:%v addr:$%04X ", rw, addr)
+	for addr := range ab_chan {
+		rw := <-rw_chan
+//fmt.Printf("rw:%v addr:$%04X ", rw, addr)
 		if rw == high {		// read
-fmt.Printf("READ ")
+//fmt.Printf("READ ")
 			if <-sync_chan == high {		// instruction fetch
-fmt.Printf("FETCH ")
+//fmt.Printf("FETCH ")
 				PC = addr
 
 				if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
-fmt.Printf("HOOK ")
+//fmt.Printf("HOOK ")
 					// get register status out of 6502
 					A = readA()
 					X = readX()
@@ -148,9 +148,9 @@ fmt.Printf("HOOK ")
 			rdy_chan <- high
 			sendData(memory[addr])
 		} else {			// write
-fmt.Printf("WRITE ")
+//fmt.Printf("WRITE ")
 			memory[addr] = getData()
 		}
-fmt.Printf("dat:$%02X\n", memory[addr])
+//fmt.Printf("dat:$%02X\n", memory[addr])
 	}
 }

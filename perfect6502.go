@@ -43,21 +43,18 @@ var (
 	irq_chan		= make(chan bool)
 	nmi_chan		= make(chan bool)
 	sync_chan	= make(chan bool)
-	ab_chan		[16]chan bool
+	ab_chan		= make(chan uint16)
 	db_chan		[8]chan bool
 	rw_chan		= make(chan bool)
 	clk0_chan	= make(chan bool)
 	so_chan		= make(chan bool)
 	clk2_chan	= make(chan bool)
-	res_chan		= make(chan bool)
+	res_chan		= make(chan bool, 1)
 )
 
 var rw_changed bool
 
 func init() {
-	for i := 0; i < len(ab_chan); i++ {
-		ab_chan[i] = make(chan bool)
-	}
 	for i := 0; i < len(db_chan); i++ {
 		db_chan[i] = make(chan bool)
 	}
@@ -473,8 +470,9 @@ func setNode(nn uint64, state bool) {
 	set_nodes_pullup(nn, state)
 	set_nodes_pulldown(nn, !state)
 	recalcNodeList([]uint64{ nn }, 1)
-	if nn == rw {
+	if nn == rw && !rw_changed {
 		rw_changed = true
+//		rw_chan <- state
 	}
 }
 
@@ -635,49 +633,31 @@ func handleMemory() {
  *
  ************************************************************/
 
-func onclock() {
-	clk := isNodeHigh(clk0)
-
-	// invert clock
-	setNode(clk0, !clk)
-
-	// handle memory reads and writes; call out to monitor
-/*	if clk == low {		// falling edge
-		handleMemory()
-	} else {			// rising edge; this is what the original cbmbasic.c did
-		if monitor_hook != nil {
-			monitor_hook()		// TODO(andlabs) is this what actual hardware monitors do...?
-		}
-	}
-*/
-
-	chipStatus()
-	cycle++
-}
-
 func chiploop() {
 	for {
 		// TODO(andlabs) - will this properly handle timing?
-
-		// if reset, do not satisfy pins other than clock or reset
-		// TODO(andlabs) - others?
-		if isNodeHigh(res) == low {
-			select {
-			case <-clk0_chan:
-fmt.Printf("clock pulse in reset\n")
-				onclock()
-			case d := <-res_chan:
-fmt.Printf("setting res in reset: %v\n", d)
-				setNode(res, d)
-			}
-			continue
-		}
-
-		// otherwise handle all pins
 		select {
 		// input pins
 		case <-clk0_chan:		// TODO(andlabs) set clock state from channel input?
-			onclock()
+			clk := isNodeHigh(clk0)
+
+			// invert clock
+			setNode(clk0, !clk)
+
+			// handle memory reads and writes; call out to monitor
+			if clk == low && isNodeHigh(res) == high {
+				ab_chan <- readAddressBus()
+			}
+/*			if clk == low {		// falling edge
+				handleMemory()
+			} else {			// rising edge; this is what the original cbmbasic.c did
+				if monitor_hook != nil {
+					monitor_hook()		// TODO(andlabs) is this what actual hardware monitors do...?
+				}
+			}
+*/
+
+			cycle++
 		case d := <-rdy_chan:
 			setNode(rdy, d)
 		case d := <-irq_chan:
@@ -704,28 +684,16 @@ fmt.Printf("setting res in reset: %v\n", d)
 			setNode(so, d)
 		case d := <-res_chan:
 			setNode(res, d)
+			if d == high {
+				cycle = 0
+				rw_changed = false
+			}
 
 		// output pins
 		// TODO(andlabs) only when clock is low?
 		// each of these do nothing other than the send
 		case clk1_chan <- isNodeHigh(clk1out):
 		case sync_chan <- isNodeHigh(sync_):
-		case ab_chan[0] <- isNodeHigh(ab0):
-		case ab_chan[1] <- isNodeHigh(ab1):
-		case ab_chan[2] <- isNodeHigh(ab2):
-		case ab_chan[3] <- isNodeHigh(ab3):
-		case ab_chan[4] <- isNodeHigh(ab4):
-		case ab_chan[5] <- isNodeHigh(ab5):
-		case ab_chan[6] <- isNodeHigh(ab6):
-		case ab_chan[7] <- isNodeHigh(ab7):
-		case ab_chan[8] <- isNodeHigh(ab8):
-		case ab_chan[9] <- isNodeHigh(ab9):
-		case ab_chan[10] <- isNodeHigh(ab10):
-		case ab_chan[11] <- isNodeHigh(ab11):
-		case ab_chan[12] <- isNodeHigh(ab12):
-		case ab_chan[13] <- isNodeHigh(ab13):
-		case ab_chan[14] <- isNodeHigh(ab14):
-		case ab_chan[15] <- isNodeHigh(ab15):
 		case db_chan[0] <- isNodeHigh(db0):
 		case db_chan[1] <- isNodeHigh(db1):
 		case db_chan[2] <- isNodeHigh(db2):
@@ -734,15 +702,16 @@ fmt.Printf("setting res in reset: %v\n", d)
 		case db_chan[5] <- isNodeHigh(db5):
 		case db_chan[6] <- isNodeHigh(db6):
 		case db_chan[7] <- isNodeHigh(db7):
-//		case rw_chan <- isNodeHigh(rw):
+		case rw_chan <- isNodeHigh(rw):
 		case clk2_chan <- isNodeHigh(clk2out):
 
-		default:
+/*		default:
+fmt.Printf("default\n")
 			if rw_changed && isNodeHigh(res) == high {		// don't trigger memory accesses during reset
 				rw_changed = false
 				rw_chan <- isNodeHigh(rw)
 			}
-		}
+*/		}
 	}
 }
 
@@ -854,10 +823,7 @@ func dochip() {
 	// release RESET
 	res_chan <- high
 
-	cycle = 0
-
 	for _ = range clock_chan {		// apparently the syntax requires a variable for a range clause
-fmt.Printf("sending clock")
 		clk0_chan <- true
 	}
 }
