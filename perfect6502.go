@@ -32,6 +32,9 @@ func init() {
 	DEBUG = true		// declared in runtime.go
 }
 
+// set by user program
+var monitor_hook func()
+
 /************************************************************
  *
  * Libc Functions and Basic Data Types
@@ -607,9 +610,11 @@ func step() {
 	// invert clock
 	setNode(clk0, !clk)
 
-	// handle memory reads and writes
+	// handle memory reads and writes; call out to monitor
 	if clk == low {		// falling edge
 		handleMemory()
+	} else {			// rising edge; this is what the original cbmbasic.c did
+		monitor_hook()		// TODO(andlabs) is this what actual hardware monitors do...?
 	}
 
 	cycle++

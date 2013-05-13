@@ -5,7 +5,7 @@ package main
 //)
 
 func main() {
-	clk := false
+	monitor_hook = handle_monitor
 
 	initAndResetChip()
 
@@ -15,10 +15,6 @@ func main() {
 	// emulate the 6502!
 	for {
 		step()
-		clk = !clk
-		if clk {
-			handle_monitor()
-		}
 
 //		chipStatus()
 		//if (cycle % 1000) == 0 { fmt.Printf("%d\n", cycle) }
