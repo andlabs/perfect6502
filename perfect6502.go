@@ -25,6 +25,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	// ...
 )
 
@@ -34,6 +35,7 @@ func init() {
 
 // set by user program
 var monitor_hook func()
+var clock_chan <-chan time.Time
 
 /************************************************************
  *
@@ -605,6 +607,8 @@ func handleMemory() {
  ************************************************************/
 
 func step() {
+	<-clock_chan
+
 	clk := isNodeHigh(clk0)
 
 	// invert clock
@@ -726,10 +730,14 @@ func resetChip() {
 	cycle = 0
 }
 
-func initAndResetChip() {
+func dochip() {
 	// set up data structures for efficient emulation
 	setupNodesAndTransistors()
 
 	// set initial state of nodes, transistors, inputs; RESET chip
 	resetChip()
+
+	for {
+		step()
+	}
 }
