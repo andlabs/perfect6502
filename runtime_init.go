@@ -56,33 +56,6 @@ func init_monitor() {
 	memory[0xFFFD] = 0xF0
 }
 
-/*func getAddr() (a uint16) {
-	for i := int(15); i >= 0; i-- {
-		if <-ab_chan[i] == high {
-			a |= 1
-		}
-		a <<= 1
-	}
-	return a
-}
-*/
-func getData() (d byte) {
-	for i := int(7); i >= 0; i-- {
-		if <-db_chan[i] == high {
-			d |= 1
-		}
-		d <<= 1
-	}
-	return d
-}
-
-func sendData(d byte) {
-	for i := 0; i < 8; i++ {
-		db_chan[i] <- (d & 1) == 1
-		d >>= 1
-	}
-}
-
 func monitor() {
 	for addr := range ab_chan {
 		rw := <-rw_chan
@@ -146,10 +119,10 @@ func monitor() {
 
 			// send data
 			rdy_chan <- high
-			sendData(memory[addr])
+			db_chan <- memory[addr]
 		} else {			// write
 //fmt.Printf("WRITE ")
-			memory[addr] = getData()
+			memory[addr] = <-db_chan
 		}
 //fmt.Printf("dat:$%02X\n", memory[addr])
 	}

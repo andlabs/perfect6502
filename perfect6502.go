@@ -44,7 +44,7 @@ var (
 	nmi_chan		= make(chan bool)
 	sync_chan	= make(chan bool)
 	ab_chan		= make(chan uint16)
-	db_chan		[8]chan bool
+	db_chan		= make(chan byte)
 	rw_chan		= make(chan bool)
 	clk0_chan	= make(chan bool)
 	so_chan		= make(chan bool)
@@ -53,12 +53,6 @@ var (
 )
 
 var rw_changed bool
-
-func init() {
-	for i := 0; i < len(db_chan); i++ {
-		db_chan[i] = make(chan bool)
-	}
-}
 
 /************************************************************
  *
@@ -664,22 +658,8 @@ func chiploop() {
 			setNode(irq, d)
 		case d := <-nmi_chan:
 			setNode(nmi, d)
-		case d := <-db_chan[0]:
-			setNode(db0, d)
-		case d := <-db_chan[1]:
-			setNode(db1, d)
-		case d := <-db_chan[2]:
-			setNode(db2, d)
-		case d := <-db_chan[3]:
-			setNode(db3, d)
-		case d := <-db_chan[4]:
-			setNode(db4, d)
-		case d := <-db_chan[5]:
-			setNode(db5, d)
-		case d := <-db_chan[6]:
-			setNode(db6, d)
-		case d := <-db_chan[7]:
-			setNode(db7, d)
+		case d := <-db_chan:
+			writeDataBus(d)
 		case d := <-so_chan:		// TODO does this properly handle so's odd behavior?
 			setNode(so, d)
 		case d := <-res_chan:
@@ -694,14 +674,7 @@ func chiploop() {
 		// each of these do nothing other than the send
 		case clk1_chan <- isNodeHigh(clk1out):
 		case sync_chan <- isNodeHigh(sync_):
-		case db_chan[0] <- isNodeHigh(db0):
-		case db_chan[1] <- isNodeHigh(db1):
-		case db_chan[2] <- isNodeHigh(db2):
-		case db_chan[3] <- isNodeHigh(db3):
-		case db_chan[4] <- isNodeHigh(db4):
-		case db_chan[5] <- isNodeHigh(db5):
-		case db_chan[6] <- isNodeHigh(db6):
-		case db_chan[7] <- isNodeHigh(db7):
+		case db_chan <- readDataBus():
 		case rw_chan <- isNodeHigh(rw):
 		case clk2_chan <- isNodeHigh(clk2out):
 
