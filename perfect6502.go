@@ -46,7 +46,7 @@ var (
 	clk0_chan	= make(chan bool)
 	so_chan		= make(chan bool)
 	clk2_chan	= make(chan bool)
-	res_chan		= make(chan bool, 1)
+	res_chan		= make(chan bool)
 )
 
 // for debugging and monitor hook
@@ -665,7 +665,7 @@ func chiploop() {
 		case rw_chan <- isNodeHigh(rw):
 		case clk2_chan <- isNodeHigh(clk2out):
 
-		// debugging info
+		// debugging/monitor info
 		case regs_chan <- regs_monitor{
 			A:	readA(),
 			X:	readX(),

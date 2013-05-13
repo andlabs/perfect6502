@@ -1,7 +1,6 @@
 package main
 
 import (
-//"fmt"
 	"os"
 	"time"
 )
@@ -121,15 +120,11 @@ func monitor(monitor_clock <-chan time.Time) {
 		// falling edge; handle memory accesses
 		addr := <-ab_chan
 		rw := <-rw_chan
-//fmt.Printf("rw:%v addr:$%04X ", rw, addr)
 		if rw == high {		// read
-//fmt.Printf("READ ")
 			if <-sync_chan == high {		// instruction fetch
-//fmt.Printf("FETCH ")
 				PC = addr
 
 				if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
-//fmt.Printf("HOOK ")
 					call_kernal = true
 				}
 			}
@@ -138,9 +133,7 @@ func monitor(monitor_clock <-chan time.Time) {
 			rdy_chan <- high
 			db_chan <- memory[addr]
 		} else {			// write
-//fmt.Printf("WRITE ")
 			memory[addr] = <-db_chan
 		}
-//fmt.Printf("dat:$%02X\n", memory[addr])
 	}
 }
