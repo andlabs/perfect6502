@@ -19,3 +19,35 @@ also TODO
 - clean up the inconsistent licensing information inclusion
 - make the comparative tester useful by seeing which chip's output format to use for the other
 - replace character output printfs with direct writes to see if it makes printing characters to the console go any faster
+
+
+
+
+6502 pinout, noting I/O direction
+
+```
+ vss | ?      I | res
+ rdy | I      O | clk2
+clk1 | O      I | so
+ irq | I      I | clk0
+ n.c | ?      ? | n.c
+ nmi | I      ? | n.c
+sync | O     O? | rw
+ vcc | ?    I/O | db0
+ ab0 | O    I/O | db1
+ ab1 | O    I/O | db2
+ ab2 | O    I/O | db3
+ ab3 | O    I/O | db4
+ ab4 | O    I/O | db5
+ ab5 | O    I/O | db6
+ ab6 | O    I/O | db7
+ ab7 | O      O | ab15
+ ab8 | O      O | ab14
+ ab9 | O      O | ab13
+ab10 | O      O | ab12
+ab11 | O      ? | vss
+```
+
+Info taken from the May 1976 datasheet.
+
+My guess that RW is output is based on both the block diagram and from http://members.casema.nl/hhaydn/howel/parts/6502_CPU.htm; the pinout section of the May 1976 datasheet does not say...
