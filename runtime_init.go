@@ -69,11 +69,12 @@ func monitor() {
 				if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
 //fmt.Printf("HOOK ")
 					// get register status out of 6502
-					A = readA()
-					X = readX()
-					Y = readY()
-					S = readSP()
-					P = readP()
+					regs := <-regs_chan
+					A = regs.A
+					X = regs.X
+					Y = regs.Y
+					S = regs.S
+					P = regs.P
 					N = (P >> 7) == 1
 					Z = ((P >> 1) & 1) == 1
 					C = (P & 1) == 1

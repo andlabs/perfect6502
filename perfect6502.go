@@ -52,6 +52,16 @@ var (
 	res_chan		= make(chan bool, 1)
 )
 
+// for debugging and monitor hook
+type regs_monitor struct {
+	A	byte
+	X	byte
+	Y	byte
+	S	byte
+	P	byte
+}
+var regs_chan = make(chan regs_monitor)
+
 /************************************************************
  *
  * Libc Functions and Basic Data Types
@@ -670,6 +680,15 @@ func chiploop() {
 		case db_chan <- readDataBus():
 		case rw_chan <- isNodeHigh(rw):
 		case clk2_chan <- isNodeHigh(clk2out):
+
+		// debugging info
+		case regs_chan <- regs_monitor{
+			A:	readA(),
+			X:	readX(),
+			Y:	readY(),
+			S:	readSP(),
+			P:	readP(),
+		}:
 		}
 	}
 }
