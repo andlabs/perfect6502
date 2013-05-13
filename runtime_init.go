@@ -1,6 +1,7 @@
 package main
 
 import (
+"fmt"
 	"os"
 )
 
@@ -55,55 +56,101 @@ func init_monitor() {
 	memory[0xFFFD] = 0xF0
 }
 
-func handle_monitor() {
-	PC = readPC()
-
-	if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
-		/* get register status out of 6502 */
-		A = readA()
-		X = readX()
-		Y = readY()
-		S = readSP()
-		P = readP()
-		N = (P >> 7) == 1
-		Z = ((P >> 1) & 1) == 1
-		C = (P & 1) == 1
-
-		kernal_dispatch()
-
-		/* encode processor status */
-		P &= 0x7C				// clear N, Z, C
-		if N {
-			P |= 1 << 7
+func getAddr() (a uint16) {
+	for i := int(15); i >= 0; i-- {
+		if <-ab_chan[i] == high {
+			a |= 1
 		}
-		if Z {
-			P |= 1 << 1
-		}
-		if C {
-			P |= 1
-		}
+		a <<= 1
+	}
+	return a
+}
 
-		/*
-		 * all KERNAL calls make the 6502 jump to $F800, so we
-		 * put code there that loads the return state of the
-		 * KERNAL function and returns to the caller
-		 */
-		memory[0xF800] = 0xA9		// LDA #P
-		memory[0xF801] = P
-		memory[0xF802] = 0x48		// PHA
-		memory[0xF803] = 0xA9		// LHA #A
-		memory[0xF804] = A
-		memory[0xF805] = 0xA2		// LDX #X
-		memory[0xF806] = X
-		memory[0xF807] = 0xA0		// LDY #Y
-		memory[0xF808] = Y
-		memory[0xF809] = 0x28		// PLP
-		memory[0xF80A] = 0x60		// RTS
-		/*
-		 * XXX we could do RTI instead of PLP/RTS, but RTI seems to be
-		 * XXX broken in the chip dump - after the KERNAL call at 0xFF90,
-		 * XXX the 6502 gets heavily confused about its program counter
-		 * XXX and executes garbage instructions
-		 */
+func getData() (d byte) {
+	for i := int(7); i >= 0; i-- {
+		if <-db_chan[i] == high {
+			d |= 1
+		}
+		d <<= 1
+	}
+	return d
+}
+
+func sendData(d byte) {
+	for i := 0; i < 8; i++ {
+		db_chan[i] <- (d & 1) == 1
+		d >>= 1
+	}
+}
+
+func monitor() {
+	for rw := range rw_chan {
+		addr := getAddr()
+fmt.Printf("rw:%v addr:$%04X ", rw, addr)
+		if rw == high {		// read
+fmt.Printf("READ ")
+			if <-sync_chan == high {		// instruction fetch
+fmt.Printf("FETCH ")
+				PC = addr
+
+				if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
+fmt.Printf("HOOK ")
+					// get register status out of 6502
+					A = readA()
+					X = readX()
+					Y = readY()
+					S = readSP()
+					P = readP()
+					N = (P >> 7) == 1
+					Z = ((P >> 1) & 1) == 1
+					C = (P & 1) == 1
+
+					kernal_dispatch()
+
+					// encode processor status
+					P &= 0x7C				// clear N, Z, C
+					if N {
+						P |= 1 << 7
+					}
+					if Z {
+						P |= 1 << 1
+					}
+					if C {
+						P |= 1
+					}
+
+					/*
+					 * all KERNAL calls make the 6502 jump to $F800, so we
+					 * put code there that loads the return state of the
+					 * KERNAL function and returns to the caller
+					 */
+					memory[0xF800] = 0xA9		// LDA #P
+					memory[0xF801] = P
+					memory[0xF802] = 0x48		// PHA
+					memory[0xF803] = 0xA9		// LHA #A
+					memory[0xF804] = A
+					memory[0xF805] = 0xA2		// LDX #X
+					memory[0xF806] = X
+					memory[0xF807] = 0xA0		// LDY #Y
+					memory[0xF808] = Y
+					memory[0xF809] = 0x28		// PLP
+					memory[0xF80A] = 0x60		// RTS
+					/*
+					 * XXX we could do RTI instead of PLP/RTS, but RTI seems to be
+					 * XXX broken in the chip dump - after the KERNAL call at 0xFF90,
+					 * XXX the 6502 gets heavily confused about its program counter
+					 * XXX and executes garbage instructions
+					 */
+				}
+			}
+
+			// send data
+			rdy_chan <- high
+			sendData(memory[addr])
+		} else {			// write
+fmt.Printf("WRITE ")
+			memory[addr] = getData()
+		}
+fmt.Printf("dat:$%02X\n", memory[addr])
 	}
 }

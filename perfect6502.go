@@ -34,7 +34,6 @@ func init() {
 }
 
 // set by user program
-var monitor_hook func()
 var clock_chan <-chan time.Time
 
 // pin channels
@@ -643,14 +642,14 @@ func chiploop() {
 			setNode(clk0, !clk)
 
 			// handle memory reads and writes; call out to monitor
-			if clk == low {		// falling edge
+/*			if clk == low {		// falling edge
 				handleMemory()
 			} else {			// rising edge; this is what the original cbmbasic.c did
 				if monitor_hook != nil {
 					monitor_hook()		// TODO(andlabs) is this what actual hardware monitors do...?
 				}
 			}
-
+*/
 			cycle++
 		case d := <-rdy_chan:
 			setNode(rdy, d)

@@ -10,11 +10,13 @@ const C64Clock = time.Second / (C64ClockHz * 2)		// thanks David Wendt
 func main() {
 	// set up memory for user program
 	init_monitor()
+	go monitor()
 
 	// set up 6502 environment
-	monitor_hook = handle_monitor
 	clock_chan = time.Tick(C64Clock)
 
 	// emulate the 6502!
-	dochip()
+	go dochip()
+
+	select {}		// wait forever
 }
