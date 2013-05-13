@@ -614,7 +614,9 @@ func step() {
 	if clk == low {		// falling edge
 		handleMemory()
 	} else {			// rising edge; this is what the original cbmbasic.c did
-		monitor_hook()		// TODO(andlabs) is this what actual hardware monitors do...?
+		if monitor_hook != nil {
+			monitor_hook()		// TODO(andlabs) is this what actual hardware monitors do...?
+		}
 	}
 
 	cycle++
