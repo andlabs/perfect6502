@@ -20,6 +20,7 @@ also TODO
 - make the comparative tester useful by seeing which chip's output format to use for the other
 - replace character output printfs with direct writes to see if it makes printing characters to the console go any faster
 - right now, the monitor is running on the same clock as the CPU, and it is assumed they are in sync; a better option is to use clk2, but I would need to rework everything to generate pin signals in the correct order and at the correct time, otherwise clk2 goes out of sync
+	- and it looks like pins are accessed multiple times per half-cycle, so I need to determine which write is the one I need to signal out and which read is the one I have to signal in
 
 
 
