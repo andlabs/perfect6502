@@ -49,11 +49,25 @@ var (
 	res_chan		= make(chan bool)
 )
 
-var nodenames = map[uint16]string{
+var nodenames_i = map[uint16]string{
 	rdy:		"rdy",
-	clk1out:	"clk1",
 	irq:		"irq",
 	nmi:		"nmi",
+	db0:		"db0",
+	db1:		"db1",
+	db2:		"db2",
+	db3:		"db3",
+	db4:		"db4",
+	db5:		"db5",
+	db6:		"db6",
+	db7:		"db7",
+	clk0:		"clk0",
+	so:		"so",
+	res:		"res",
+}
+
+var nodenames_o = map[uint16]string{
+	clk1out:	"clk1",
 	sync_:	"sync",
 	ab0:		"ab0",
 	ab1:		"ab1",
@@ -80,10 +94,7 @@ var nodenames = map[uint16]string{
 	db6:		"db6",
 	db7:		"db7",
 	rw:		"rw",
-	clk0:		"clk0",
-	so:		"so",
 	clk2out:	"clk2",
-	res:		"res",
 }
 
 // for debugging and monitor hook
