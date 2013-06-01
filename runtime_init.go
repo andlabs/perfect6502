@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"time"
 )
 
 /* XXX hook up memory[] with RAM[] in runtime.c */
@@ -56,15 +55,36 @@ func init_monitor() {
 	memory[0xFFFD] = 0xF0
 }
 
-func monitor(monitor_clock <-chan time.Time) {
-	edge := high		// start on falling edge
+func monitor() {
 	call_kernal := false
 
-	for _ = range monitor_clock {
-		edge = !edge
+	for {
+		// wait for a REF "B"
+		for <-clk1_chan != low {
+			// do nothing
+		}
 
-		// on the rising edge, call the kernal
-		if edge == high && call_kernal {
+		// REF "B"; handle memory accesses
+		addr := <-ab_chan
+		rw := <-rw_chan
+		if rw == high {		// read
+			if <-sync_chan == high {		// instruction fetch
+				PC = addr
+
+				if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
+					call_kernal = true
+				}
+			}
+		}
+
+		// wait for a REF "A"
+//		for <-clk1_chan != high {
+//			// do nothing
+//		}
+
+		// REF "A"; call the kernal and commit reads/writes
+		// TODO which order?
+		if call_kernal {
 			// get register status out of 6502
 			regs := <-regs_chan
 			A = regs.A
@@ -114,21 +134,9 @@ func monitor(monitor_clock <-chan time.Time) {
 			 */
 
 			call_kernal = false
-			continue
 		}
 
-		// falling edge; handle memory accesses
-		addr := <-ab_chan
-		rw := <-rw_chan
 		if rw == high {		// read
-			if <-sync_chan == high {		// instruction fetch
-				PC = addr
-
-				if PC >= 0xFF90 && ((PC - 0xFF90) % 3 == 0) {
-					call_kernal = true
-				}
-			}
-
 			// send data
 			rdy_chan <- high
 			db_chan <- memory[addr]

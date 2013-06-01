@@ -218,8 +218,13 @@ func get_nodes_pulldown(node uint64) bool {
 	return get_bitmap(nodes_pulldown, node)
 }
 
+var nodes_outclocks map[uint64]chan bool
+
 func set_nodes_value(node uint64, state bool) {
 	set_bitmap(nodes_value, node, state)
+	if c := nodes_outclocks[node]; c != nil {
+		c <- state
+	}
 }
 
 func get_nodes_value(node uint64) bool {
@@ -706,12 +711,12 @@ func chiploop() {
 
 		// output pins
 		// each of these do nothing other than the send
-		case clk1_chan <- isNodeHigh(clk1out):
+//		case clk1_chan <- isNodeHigh(clk1out):
 		case sync_chan <- isNodeHigh(sync_):
 		case ab_chan <- readAddressBus():
 		case db_chan <- readDataBus():
 		case rw_chan <- isNodeHigh(rw):
-		case clk2_chan <- isNodeHigh(clk2out):
+//		case clk2_chan <- isNodeHigh(clk2out):
 
 		// debugging/monitor info
 		case regs_chan <- regs_monitor{
@@ -832,6 +837,13 @@ func dochip(chip_clock <-chan time.Time) {
 
 	// release RESET
 	res_chan <- high
+
+	// set up output clock channels
+	// TODO TODO TODO TODO TODO THIS IS NOT THREAD SAFE
+	nodes_outclocks = map[uint64]chan bool{
+		clk1out:	clk1_chan,
+//		clk2out:	clk2_chan,
+	}
 
 	for _ = range chip_clock {		// apparently the syntax requires a variable for a range clause
 		clk0_chan <- true

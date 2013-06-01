@@ -21,14 +21,17 @@ func splitClock(c <-chan time.Time) (c1 <-chan time.Time, c2 <-chan time.Time) {
 
 func main() {
 	// set up 6502 environment
-	chip_clock, monitor_clock := splitClock(time.Tick(C64Clock))
-
-	// set up memory for user program
-	init_monitor()
-	go monitor(monitor_clock)
+	chip_clock := time.Tick(C64Clock)
 
 	// emulate the 6502!
 	go dochip(chip_clock)
 
-	select {}		// wait forever
+	// set up memory for user program
+	init_monitor()
+	go monitor()
+
+	// consume clk2 so as to not deadlock
+	for _ = range clk2_chan {
+		// do nothing
+	}
 }
